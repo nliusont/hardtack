@@ -61,9 +61,11 @@ def define_update_params(changes_to_make: str, uuid: str, model: str = 'llama3.1
 
     **NEVER CREATE NEW KEYS. Only update existing keys in the existing JSON structure. Your keys in update_params must be an existing key in the recipe JSON. Use your best judgement.
 
-    Keep in mind, that if you are appending an item to a list, the new value must be the old list + new item.
+    Keep in mind, that if the user wants you to add an imte to a list. You should pass the entire new list (old list + new item) as an argument.
     For example, if the user wants to add the tag "Spicy" and the existing tags are ["American", "Easy"],
     then you should pass the entire new list of ["American", "Easy", "Spicy"]
+
+    Similarly, if you are removing an item(s) from a list, then pass the new list without the unwanted items in it.
 
     Recipe:
     {st.session_state['selected_recipe']}

@@ -8,6 +8,7 @@ from hardtack.processing import process_recipe
 import hardtack.utils as utils
 import hardtack.search as search
 import hardtack.storage as storage
+import hardtack.function_registry as function_registry
 
 def find_single_recipe(*, user_desire: str, model: str = 'llama3.1', query_temp: float = 0.9, summary_temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
     """
@@ -116,6 +117,7 @@ def run_processing_pipeline(
     return f"Successfully processed and saved: {recipe_save_path}"
 
 def get_bot_response(message, model: str = 'llama3.1', temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
+
     """
     Get a response from the chatbot based on the user's message.
 
@@ -145,7 +147,7 @@ def get_bot_response(message, model: str = 'llama3.1', temp: float = 0.6, server
              
             Functions available:
             1. run_recommendation_engine(user_desire="<YOUR INPUT>") - Triggers a pipeline that provides recommendations based on user input. Only trigger this function if the user asks you for recommendations in their most recent message. The user_desires is a positional input that is a string. It should be a summary of what the user is looking for including flavor profile, cuisine, type of equipment (e.g. pressure cooker), meal type (e.g. lunch), food type (e.g. soup, salad), ingredients, etc. The more descriptive the better.
-            2. find_single_recipe(user_desire="<YOUR INPUT>") - Triggers a pipeline to search for a specific recipe that is known to exist in the database. The "name" field is likely the key to searching. The user_desires is a positional input that is a string. It should be a summary of what the user is looking for including flavor profile, cuisine, type of equipment (e.g. pressure cooker), meal type (e.g. lunch), food type (e.g. soup, salad), ingredients, etc. The more descriptive the better.
+            2. find_single_recipe(user_desire="<YOUR INPUT>") - Triggers a pipeline to search for a single known recipe. Trigger this function when the user is asking you to find a specific recipe that is known to exist in the database. The "name" field is likely the key to searching. The user_desires is a positional input that is a string. It should be a summary of what the user is looking for including flavor profile, cuisine, type of equipment (e.g. pressure cooker), meal type (e.g. lunch), food type (e.g. soup, salad), ingredients, etc. The more descriptive the better.
             3. show_recipe(recipe_uuid="<YOUR INPUT>") - Displays the entire recipe for the user to read and respond to. Takes the UUID of the recipe they want to see. If a user asks you to "show" the a recipe, then they likely want this function.
             4. edit_recipe(uuid="<YOUR INPUT>", changes_to_make="<YOUR DESCRIPTION OF CHANGES>") - Updates the record of a recipe in the database. You can edit/update specific fields by describing in detail the changes and fields to make.
             5. run_processing_pipeline(source_type=<url or html or img, url=str) - This function is to add a new recipe to the database. If the user wants to add a recipe, specify what the source type is. source_type can either be 'url', 'img' or 'html'. If the source_type is 'url', provide the url as a string.
@@ -210,8 +212,8 @@ def get_bot_response(message, model: str = 'llama3.1', temp: float = 0.6, server
     except requests.exceptions.RequestException as e:
         yield f"Error: Could not connect to the bot server. Details: {e}"
 
-# FUNCTION_REGISTRY maps function names to their corresponding function handlers
-FUNCTION_REGISTRY = {
+# Now we update the function registry after the functions are defined
+function_registry.FUNCTION_REGISTRY = {
     "run_recommendation_engine": run_recommendation_engine,
     "find_single_recipe": find_single_recipe,
     "show_recipe": show_recipe,
