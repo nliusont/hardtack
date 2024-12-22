@@ -65,7 +65,7 @@ with col2:
             recipe_uuid = st.session_state['selected_recipe_uuid']
             
             # Construct the file path for the recipe JSON file
-            file_path = os.path.join('data', 'raw', 'json', f'{recipe_uuid}.json')
+            file_path = os.path.join('data', 'json', f'{recipe_uuid}.json')
             
             if os.path.isfile(file_path):
                 try:
