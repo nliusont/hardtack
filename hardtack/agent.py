@@ -4,6 +4,7 @@ import json
 import requests
 import streamlit as st
 import os
+from openai import OpenAI
 from hardtack.processing import process_recipe
 import hardtack.utils as utils
 import hardtack.search as search
@@ -200,33 +201,46 @@ def get_bot_response(message, model: str = 'llama3.1', temp: float = 0.6, server
             messages.append({"role": role, "content": msg_text})
         
         messages.append({"role": "user", "content": message})
-        
-        response = requests.post(f"{server_url}/api/chat", json={
-            "model": model, 
-            "messages": messages,
-            "stream": stream,
-            'options': {
-                'temperature': temp,
-                "num_ctx": 32768
-            }
-        }, stream=stream)
 
-        if response.status_code == 200:
-            data = response.json()
-            content = data.get("message", {}).get("content", "")
-            function_call = utils.extract_function_call(content)
-            
-            if function_call:  # If a function call was detected
-                print(f"Executing function '{function_call['function_name']}' with args: {function_call['arguments']}")
-                function_result = utils.handle_function_call(function_call)
-                for chunk in utils.simulate_stream(function_result):
-                    yield chunk
-            else:
-                for chunk in utils.simulate_stream(content):
-                    yield chunk
+        if model == 'openai':
 
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages,
+                temperature=temp
+            )
+
+            content = content.replace('```json', '')
+            content = response.choices[0].message.content
         else:
-            yield f"Error: Received status code {response.status_code} from the bot server."
+            response = requests.post(f"{server_url}/api/chat", json={
+                "model": model, 
+                "messages": messages,
+                "stream": stream,
+                'options': {
+                    'temperature': temp,
+                    "num_ctx": 32768
+                }
+            }, stream=stream)
+
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get("message", {}).get("content", "")
+            else:
+                yield f"Error: Received status code {response.status_code} from the bot server."
+        
+        function_call = utils.extract_function_call(content)
+        if function_call:  # If a function call was detected
+            print(f"Executing function '{function_call['function_name']}' with args: {function_call['arguments']}")
+            function_result = utils.handle_function_call(function_call)
+            for chunk in utils.simulate_stream(function_result):
+                yield chunk
+        else:
+            for chunk in utils.simulate_stream(content):
+                yield chunk
+
     except requests.exceptions.RequestException as e:
         yield f"Error: Could not connect to the bot server. Details: {e}"
 

@@ -2,6 +2,7 @@ from PIL import Image
 import base64
 import io
 import requests
+from openai import OpenAI
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 import re
@@ -16,65 +17,95 @@ def extract_text_from_images(
         uuid: str = ''
     ) -> dict:
     """
-    Extract structured recipe information directly from images using the Llama 3.2 Vision model.
+    Extract structured recipe information directly from images using a Vision model.
 
     Args:
         image_paths (list): A list of file paths to the images.
-        model (str): The Llama Vision model to use.
+        model (str): The Vision model to use.
         server_url (str): The URL of the server where the LLM is running.
         temp (float): Temperature for the LLM.
+        api_key (str): API key for OpenAI models if used.
 
     Returns:
         dict: Extracted recipe information as a structured JSON object.
     """
-    
     # Step 1: Resize images and encode them in base64
     encoded_images = resize_and_encode_images(image_paths, save_dir, uuid)
     if not encoded_images:
         print("No images available for extraction.")
         return {}
 
-    # Step 2: Construct the Llama Vision prompt
+    # Step 2: Construct the Vision prompt
     prompt = f"""
     You are an expert chef and recipe writer.
     Perform OCR and extract the structured recipe information from the following image.
     Extract the exact text and respect borders and columns so text that is continuous.
+    Feel free to omit superfluous text that is filler such as recipe history or personal stories from the author. 
+    Do not omit tips or notes on how to make the dish.
     """
 
     extracted_text = []
 
     for enc_img in encoded_images:
-        # Step 3: Prepare the API payload
-        payload = {
-            "model": model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt,
-                    "images": [enc_img]  # This is now base64-encoded images
+        if model == 'openai':
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+            try:
+                print('Requesting text extraction from OpenAI..')
+                response = client.chat.completions.create(
+                    model='gpt-4o-mini',
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{enc_img}"}}
+                            ]
+                        }
+                    ],
+                    temperature=temp
+                )
+
+                content = response.choices[0].message.content
+                extracted_text.append(content)
+
+            except Exception as e:
+                print(f"Error communicating with OpenAI: {e}")
+                return {}
+
+        else:
+            # Step 3: Prepare the API payload
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt,
+                        "images": [enc_img]  # This is now base64-encoded images
+                    }
+                ],
+                "stream": False,
+                "options": {
+                    'temperature': temp,
+                    'num_ctx': 32768
                 }
-            ],
-            "stream": False,
-            "options": {
-                'temperature': temp,
-                'num_ctx': 32768
             }
-        }
 
-        try:
-            print('Requesting text extraction from vision model...')
-            response = requests.post(f"{server_url}/api/chat", json=payload)
-            response.raise_for_status()
-            
-            result = response.json()
-            output = result.get("message", {}).get("content", "")
-            extracted_text.append(output)
+            try:
+                print('Requesting text extraction from Vision model...')
+                response = requests.post(f"{server_url}/api/chat", json=payload)
+                response.raise_for_status()
 
-        except Exception as e:
-            print(f"Error communicating with Llama 3.2 Vision server: {e}")
-            return {}
-        
+                result = response.json()
+                output = result.get("message", {}).get("content", "")
+                extracted_text.append(output)
+
+            except Exception as e:
+                print(f"Error communicating with Vision server: {e}")
+                return {}
+
     return extracted_text
+
 
 def resize_and_encode_images(image_paths, save_dir, uuid, max_dimension: int = 1120) -> list:
     """
@@ -101,11 +132,12 @@ def resize_and_encode_images(image_paths, save_dir, uuid, max_dimension: int = 1
             if isinstance(image_input, io.BytesIO):
                 # Open image from BytesIO object
                 image = Image.open(image_input)
-            elif isinstance(image_input, str) and os.path.exists(image_input):
+            elif isinstance(image_input, str) and os.path.isfile(os.path.expanduser(image_input)):
                 # Open image from file path
                 image = Image.open(image_input)
             elif isinstance(image_input, str):  # If it's an UploadedFile (Streamlit)
                 # Convert UploadedFile to BytesIO
+                print('door 3')
                 image = Image.open(io.BytesIO(image_input.getvalue()))
             else:
                 print(f"Unsupported file input: {image_input}")
@@ -187,6 +219,8 @@ def parse_html(html_list):
     for htm in html_list:
         if hasattr(htm, 'content'):
             html = htm.content
+        else:
+            html = htm
 
         soup = BeautifulSoup(html, 'lxml')
 

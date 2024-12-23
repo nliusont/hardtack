@@ -4,6 +4,7 @@ import json
 import requests
 import uuid
 import os
+from openai import OpenAI
 from datetime import datetime
 from hardtack.acquisition import extract_text_from_images, fetch_html_from_url, parse_html, clean_text
 
@@ -11,9 +12,7 @@ from hardtack.acquisition import extract_text_from_images, fetch_html_from_url, 
 def extract_recipe(
         text: str, 
         model: str = 'llama3.1',
-        tag_model: str = 'qwen2.5', 
         recipe_temp: float = 0.3, 
-        tag_temp: float = 0.75, 
         server_url: str = "http://192.168.0.19:11434") -> dict:
     """
     Extract structured recipe information from raw text using an LLM (Language Model).
@@ -25,6 +24,7 @@ def extract_recipe(
         recipe_temp (float): Temperature for recipe extraction.
         tag_temp (float): Temperature for tag extraction.
         server_url (str): The URL of the server where the model is hosted.
+        api_key (str): API key for OpenAI models if used.
 
     Returns:
         dict: A structured recipe with details like ingredients, cooking steps, and tags.
@@ -61,24 +61,38 @@ def extract_recipe(
     """
     print('Requesting recipe extraction...')
     try:
-        response = requests.post(
-            f"{server_url}/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                'stream': False,
-                'format': 'json',
-                'options': {
-                    'temperature': recipe_temp,
-                    "num_ctx": 32768},
-            }
-        )
-        response.raise_for_status()
-        result = response.json()
-        output = json.loads(result['response'])
-        tags_and_notes = interpret_recipe(text=text, model=tag_model, temp=tag_temp, server_url=server_url)
-        output['tags'] = tags_and_notes['tags']
-        output['recipe_notes'] = tags_and_notes['recipe_notes']
+        if model == 'openai':
+
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                temperature=recipe_temp
+            )
+            
+            content = response.choices[0].message.content
+            content = content.replace('```json', '').replace('```', '')
+            output = json.loads(content)
+
+        else:
+            response = requests.post(
+                f"{server_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    'stream': False,
+                    'format': 'json',
+                    'options': {
+                        'temperature': recipe_temp,
+                        "num_ctx": 32768},
+                }
+            )
+            response.raise_for_status()
+            result = response.json()
+            output = json.loads(result['response'])
 
         return output
 
@@ -87,7 +101,8 @@ def extract_recipe(
         return {}
 
 
-def interpret_recipe(text: str, model: str = 'qwen2.5', temp: float = 0.5, server_url: str = "http://192.168.0.19:11434") -> list:
+
+def interpret_recipe(text: str, model: str = 'qwen2.5', temp: float = 0.5, server_url: str = "http://192.168.0.19:11434") -> dict:
     """
     Extract tags and notes for a recipe using a model.
 
@@ -96,6 +111,7 @@ def interpret_recipe(text: str, model: str = 'qwen2.5', temp: float = 0.5, serve
         model (str): The model used for extracting tags.
         temp (float): Temperature setting for the model.
         server_url (str): The URL of the server.
+        api_key (str): API key for OpenAI models if used.
 
     Returns:
         dict: A dictionary with 'tags' and 'recipe_notes'.
@@ -138,24 +154,40 @@ def interpret_recipe(text: str, model: str = 'qwen2.5', temp: float = 0.5, serve
         """
     print('Requesting recipe interpretation...')
     try:
-        response = requests.post(
-            f"{server_url}/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                'stream': False,
-                'format': 'json',
-                'options': {
-                    'temperature': temp,
-                    "num_ctx": 32768},
-            }
-        )
-        response.raise_for_status()
-        result = response.json()
-        return json.loads(result['response'])
+        if model == 'openai':
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                temperature=temp
+            )
+
+            content = response.choices[0].message.content
+            content = content.replace('```json', '').replace('```', '')
+            return json.loads(content)
+
+        else:
+            response = requests.post(
+                f"{server_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    'stream': False,
+                    'format': 'json',
+                    'options': {
+                        'temperature': temp,
+                        "num_ctx": 32768},
+                }
+            )
+            response.raise_for_status()
+            result = response.json()
+            return json.loads(result['response'])
 
     except Exception as e:
-        print(f"Error communicating with Ollama server: {e}")
+        print(f"Error communicating with LLM server: {e}")
         return {}
 
 
@@ -278,18 +310,21 @@ def process_recipe(
 
     if url:
         html = fetch_html_from_url(url)
-        cleaned_text = parse_html(html)
+        cleaned_text = parse_html([html])
         file_path = os.path.join(f'{save_dir}parsed_html/', f'{identifier}.txt')
         with open(file_path, "wb" if isinstance(cleaned_text, bytes) else "w") as f:
             f.write(cleaned_text)
     elif images:
-        cleaned_text = extract_text_from_images(images, uuid=identifier)
+        cleaned_text = extract_text_from_images(images, uuid=identifier, model=model)
     elif html_files:
         scraped_text = parse_html(html_files)
         cleaned_text = clean_text(scraped_text)
 
-    recipe = extract_recipe(text=cleaned_text, recipe_temp=recipe_temp, tag_temp=tag_temp, model=model, tag_model=tag_model)
-    print('recipe processed')
+    recipe = extract_recipe(text=cleaned_text, recipe_temp=recipe_temp, model=model)
+    tags_and_notes = interpret_recipe(text=cleaned_text, model=tag_model, temp=tag_temp)
+    recipe['tags'] = tags_and_notes['tags']
+    recipe['recipe_notes'] = tags_and_notes['recipe_notes']
+    print('Recipe processed.')
     if post_process:
         processed_recipe = post_process_recipe(recipe, cleaned_text, temp=process_temp, model=model)
     else:
