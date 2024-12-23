@@ -86,7 +86,7 @@ with col2:
             
             try:
                 # Retrieve the JSON file from GCS
-                recipe_data = retrieve_file_from_gcs(bucket_name, blob_name)
+                recipe_data = retrieve_file_from_gcs(blob_name)
                 recipe_data = json.load(recipe_data)
                 
                 # Call the function to display the recipe
