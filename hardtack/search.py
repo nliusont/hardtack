@@ -5,6 +5,7 @@ import requests
 import weaviate
 import streamlit as st
 import os
+from openai import OpenAI
 from weaviate.classes.query import MetadataQuery
 
 
@@ -58,22 +59,40 @@ def define_query_params(user_input: str, model: str = 'qwen2.5', query_temp: flo
     {user_input}
     """
     try:
-        response = requests.post(
-            f"{server_url}/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                'stream': False,
-                'format': 'json',
-                'options': {
-                    'temperature': query_temp,
-                    "num_ctx": 32768
-                },
-            }
-        )
-        response.raise_for_status()
-        result = response.json()
-        return json.loads(result['response'])
+        if model=='openai':
+
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                temperature=query_temp
+            )
+            
+            content = response.choices[0].message.content
+            content = content.replace('```json', '').replace('```', '')
+            result = json.loads(content)
+            return result
+        else:
+            response = requests.post(
+                f"{server_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    'stream': False,
+                    'format': 'json',
+                    'options': {
+                        'temperature': query_temp,
+                        "num_ctx": 32768
+                    },
+                }
+            )
+            response.raise_for_status()
+
+            result = response.json()
+            return json.loads(result['response'])
     except Exception as e:
         print(f"Error communicating with the server: {e}")
         return {}
@@ -239,25 +258,42 @@ def summarize_results(
     """
 
     try:
-        response = requests.post(
-            f"{server_url}/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": stream,
-                "options": {
-                    "temperature": temp,
-                    "num_ctx": 32768
-                }
-            },
-            stream=stream
-        )
+        if model=='openai':
 
-        if response.status_code == 200:
-            data = response.json()
-            return data['response']
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                temperature=temp
+            )
+            
+            content = response.choices[0].message.content
+            content = content.replace('```json', '').replace('```', '')
+            result = json.loads(content)
+            return result
         else:
-            return f"Error: Received status code {response.status_code} from the server."
+            response = requests.post(
+                f"{server_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": stream,
+                    "options": {
+                        "temperature": temp,
+                        "num_ctx": 32768
+                    }
+                },
+                stream=stream
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                return data['response']
+            else:
+                return f"Error: Received status code {response.status_code} from the server."
     except requests.exceptions.RequestException as e:
         return f"Error: Could not connect to the server. Details: {e}"
 
@@ -320,24 +356,41 @@ def summarize_single_search(
     """
 
     try:
-        response = requests.post(
-            f"{server_url}/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": stream,
-                "options": {
-                    "temperature": temp,
-                    "num_ctx": 32768
-                }
-            },
-            stream=stream
-        )
+        if model=='openai':
 
-        if response.status_code == 200:
-            data = response.json()
-            return data['response']
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                temperature=temp
+            )
+            
+            content = response.choices[0].message.content
+            content = content.replace('```json', '').replace('```', '')
+            result = json.loads(content)
+            return result
         else:
-            return f"Error: Received status code {response.status_code} from the server."
+            response = requests.post(
+                f"{server_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": stream,
+                    "options": {
+                        "temperature": temp,
+                        "num_ctx": 32768
+                    }
+                },
+                stream=stream
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                return data['response']
+            else:
+                return f"Error: Received status code {response.status_code} from the server."
     except requests.exceptions.RequestException as e:
         return f"Error: Could not connect to the server. Details: {e}"

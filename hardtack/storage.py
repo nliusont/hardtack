@@ -5,6 +5,7 @@ import os
 import weaviate
 import requests
 import streamlit as st
+from openai import OpenAI
 
 def define_update_params(changes_to_make: str, uuid: str, model: str = 'llama3.1', query_temp: float = 0.3, server_url: str = "http://192.168.0.19:11434"):
     """
@@ -74,26 +75,43 @@ def define_update_params(changes_to_make: str, uuid: str, model: str = 'llama3.1
     {changes_to_make}
     """
     try:
-        response = requests.post(
-            f"{server_url}/api/generate",
-            json={
-                "model": model,  # replace with the model name you're using
-                "prompt": prompt,
-                'stream': False,
-                'format': 'json',
-                'options': {
-                    'temperature': query_temp,
-                    "num_ctx": 32768
+        if model=='openai':
+
+            client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": prompt}
+                ],
+                temperature=query_temp
+            )
+            
+            content = response.choices[0].message.content
+            content = content.replace('```json', '').replace('```', '')
+            result = json.loads(content)
+            return result
+        else:
+            response = requests.post(
+                f"{server_url}/api/generate",
+                json={
+                    "model": model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "temperature": query_temp,
+                        "num_ctx": 32768
+                    }
                 },
-            }
-        )
-        response.raise_for_status()
-        result = response.json()
-        return json.loads(result['response'])
-    
-    except Exception as e:
-        print(f"Error communicating with Ollama server: {e}")
-        return {}
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                return data['response']
+            else:
+                return f"Error: Received status code {response.status_code} from the server."
+    except requests.exceptions.RequestException as e:
+        return f"Error: Could not connect to the server. Details: {e}"
 
 def add_weaviate_record(
         recipe_json: dict,
