@@ -90,7 +90,7 @@ def run_recommendation_engine(*, user_desire: str, model: str = 'llama3.1', quer
 
 def run_processing_pipeline(
         source_type: str,
-        url: str,
+        url: str = 'url',
         save_dir: str = 'data/json'
         ):
     """
@@ -106,15 +106,33 @@ def run_processing_pipeline(
     """
     if source_type == "url":
         recipe = process_recipe(url=url, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='llama3.1', tag_model='qwen2.5', post_process=False)
-        storage.add_weaviate_record(recipe_json=recipe)
-        
-        recipe_save_path = os.path.join(save_dir, f"{recipe['uuid']}.json")
-        with open(recipe_save_path, 'w', encoding='utf-8') as f:
-            json.dump(recipe, f, indent=4)
-        
-        print(f"Successfully processed and saved: {recipe_save_path}")
 
-    return f"Successfully processed and saved: {recipe_save_path}"
+    elif source_type == 'file':
+        file_type = st.session_state['uploaded_file_type']
+        uploaded_files = st.session_state['uploaded_files']
+
+        if file_type == 'text/html':
+            # Process HTML file
+            recipe = process_recipe(html_files=uploaded_files, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='llama3.1', tag_model='qwen2.5', post_process=False)
+            print(f"Successfully processed: {', '.join([x.name for x in uploaded_files])}")
+
+        elif file_type.startswith('image/'):
+            # Process image file
+            recipe = process_recipe(images=uploaded_files, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='llama3.1', tag_model='qwen2.5', post_process=False)
+            print(f"Successfully processed: {', '.join([x.name for x in uploaded_files])}")
+
+        else:
+            # Return an error message for unsupported file types
+            st.error(f"Unsupported file type: {file_type}. Please upload HTML or image files.")
+            return f"Error: Unsupported file type: {file_type}"
+
+    storage.add_weaviate_record(recipe_json=recipe)
+    recipe_save_path = os.path.join(save_dir, f"{recipe['uuid']}.json")
+    with open(recipe_save_path, 'w', encoding='utf-8') as f:
+        json.dump(recipe, f, indent=4)
+    
+    print(f"Successfully processed and saved: {recipe_save_path}")
+    return f"Successfully processed and saved recipe with UUID: {recipe['uuid']}"
 
 def get_bot_response(message, model: str = 'llama3.1', temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
 
@@ -150,7 +168,7 @@ def get_bot_response(message, model: str = 'llama3.1', temp: float = 0.6, server
             2. find_single_recipe(user_desire="<YOUR INPUT>") - Triggers a pipeline to search for a single known recipe. Trigger this function when the user is asking you to find a specific recipe that is known to exist in the database. The "name" field is likely the key to searching. The user_desires is a positional input that is a string. It should be a summary of what the user is looking for including flavor profile, cuisine, type of equipment (e.g. pressure cooker), meal type (e.g. lunch), food type (e.g. soup, salad), ingredients, etc. The more descriptive the better.
             3. show_recipe(recipe_uuid="<YOUR INPUT>") - Displays the entire recipe for the user to read and respond to. Takes the UUID of the recipe they want to see. If a user asks you to "show" the a recipe, then they likely want this function.
             4. edit_recipe(uuid="<YOUR INPUT>", changes_to_make="<YOUR DESCRIPTION OF CHANGES>") - Updates the record of a recipe in the database. You can edit/update specific fields by describing in detail the changes and fields to make.
-            5. run_processing_pipeline(source_type=<url or html or img, url=str) - This function is to add a new recipe to the database. If the user wants to add a recipe, specify what the source type is. source_type can either be 'url', 'img' or 'html'. If the source_type is 'url', provide the url as a string.
+            5. run_processing_pipeline(source_type=<url or html or img, url=str) - This function is to add a new recipe to the database. If the user wants to add a recipe, specify what the source type is. source_type can either be 'url', 'file'. If the source_type is 'url', provide the url as a string. If the user has uploaded images or html, then the source type is 'file'.
              
             When you want to call a function, respond with this exact format and DO NOT RESPOND WITH ANY OTHER TEXT:
             ```json

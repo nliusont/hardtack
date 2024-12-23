@@ -5,12 +5,15 @@ import requests
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 import re
+import os
 
 def extract_text_from_images(
         image_paths: list, 
         model: str = 'llama3.2-vision', 
         server_url: str = "http://192.168.0.19:11434", 
-        temp: float = 0.3
+        temp: float = 0.3,
+        save_dir: str = 'data/images/',
+        uuid: str = ''
     ) -> dict:
     """
     Extract structured recipe information directly from images using the Llama 3.2 Vision model.
@@ -26,7 +29,7 @@ def extract_text_from_images(
     """
     
     # Step 1: Resize images and encode them in base64
-    encoded_images = resize_and_encode_images(image_paths)
+    encoded_images = resize_and_encode_images(image_paths, save_dir, uuid)
     if not encoded_images:
         print("No images available for extraction.")
         return {}
@@ -59,7 +62,7 @@ def extract_text_from_images(
         }
 
         try:
-            print('Requesting recipe extraction from images via /api/chat...')
+            print('Requesting text extraction from vision model...')
             response = requests.post(f"{server_url}/api/chat", json=payload)
             response.raise_for_status()
             
@@ -73,43 +76,66 @@ def extract_text_from_images(
         
     return extracted_text
 
-def resize_and_encode_images(image_paths: list, max_dimension: int = 1120) -> list:
+def resize_and_encode_images(image_paths, save_dir, uuid, max_dimension: int = 1120) -> list:
     """
-    Resize images so that the largest dimension is `max_dimension` and encode them as base64 strings.
+    Resize images so that the largest dimension is `max_dimension`, save them as PNG in the save_dir,
+    and encode them as base64 strings for processing.
 
     Args:
-        image_paths (list): List of paths to the images to be resized.
-        max_dimension (int): Maximum dimension (height or width) for the resized images.
+        image_paths (list): List of image file paths or BytesIO objects.
+        save_dir (str): Directory to save the images.
+        uuid (str): UUID for naming the saved files.
+        max_dimension (int): Maximum dimension for resizing.
 
     Returns:
         list: List of base64-encoded images.
     """
     encoded_images = []
 
-    for image_path in image_paths:
-        try:
-            print(f"Processing image: {image_path}")
-            
-            # Resize image
-            with Image.open(image_path) as image:
-                original_size = image.size
-                max_side = max(original_size)
-                
-                if max_side > max_dimension:
-                    ratio = max_dimension / max_side
-                    new_size = (int(original_size[0] * ratio), int(original_size[1] * ratio))
-                    print(f"Resizing image from {original_size} to {new_size}")
-                    image = image.resize(new_size, Image.LANCZOS)
+    # Ensure the directory exists
+    os.makedirs(save_dir, exist_ok=True)
 
-                # Convert to bytes and encode as base64
-                buffered = io.BytesIO()
-                image.save(buffered, format="PNG")  # Save the image as PNG in memory, not raw bytes
-                image_bytes = buffered.getvalue()
-                encoded_image = base64.b64encode(image_bytes).decode('utf-8')
-                encoded_images.append(encoded_image)
-                        
+    for idx, image_input in enumerate(image_paths, start=1):
+        try:
+            # Check if input is a BytesIO object or file path
+            if isinstance(image_input, io.BytesIO):
+                # Open image from BytesIO object
+                image = Image.open(image_input)
+            elif isinstance(image_input, str) and os.path.exists(image_input):
+                # Open image from file path
+                image = Image.open(image_input)
+            elif isinstance(image_input, str):  # If it's an UploadedFile (Streamlit)
+                # Convert UploadedFile to BytesIO
+                image = Image.open(io.BytesIO(image_input.getvalue()))
+            else:
+                print(f"Unsupported file input: {image_input}")
+                continue
+
+            # Resize image if necessary
+            original_size = image.size
+            max_side = max(original_size)
+            
+            if max_side > max_dimension:
+                ratio = max_dimension / max_side
+                new_size = (int(original_size[0] * ratio), int(original_size[1] * ratio))
+                print(f"Resizing image from {original_size} to {new_size}")
+                image = image.resize(new_size, Image.LANCZOS)
+
+            # Save the image as PNG with a unique name
+            file_name = f"{uuid}-{idx}.png"
+            file_path = os.path.join(save_dir, file_name)
+            image.save(file_path, format="PNG")  # Save the image as PNG in the specified directory
+            print(f"Saved image: {file_path}")
+
+            # Convert the image to bytes and encode as base64
+            buffered = io.BytesIO()
+            image.save(buffered, format="PNG")  # Save the image as PNG in memory
+            image_bytes = buffered.getvalue()
+            encoded_image = base64.b64encode(image_bytes).decode('utf-8')
+            encoded_images.append(encoded_image)
+
         except Exception as e:
-            print(f"Error processing image {image_path}: {e}")
+            print(f"Error processing image {image_input}: {e}")
             continue
 
     if not encoded_images:
@@ -146,7 +172,7 @@ def fetch_html_from_url(url):
     
     return response
 
-def parse_html(html):
+def parse_html(html_list):
     """
     Parse the HTML content to extract and clean the text.
 
@@ -156,19 +182,24 @@ def parse_html(html):
     Returns:
         str: Cleaned text extracted from the HTML.
     """
-    if hasattr(html, 'content'):
-        html = html.content
+    combined_text = ''
 
-    soup = BeautifulSoup(html, 'lxml')
+    for htm in html_list:
+        if hasattr(htm, 'content'):
+            html = htm.content
 
-    # Remove unnecessary tags
-    for tag in soup(['script', 'style', 'noscript']):
-        tag.decompose()
+        soup = BeautifulSoup(html, 'lxml')
 
-    # Extract all text from visible elements
-    text = soup.get_text(separator=' ')
+        # Remove unnecessary tags
+        for tag in soup(['script', 'style', 'noscript']):
+            tag.decompose()
 
-    return clean_text(text)
+        # Extract all text from visible elements
+        text = soup.get_text(separator=' ')
+
+        combined_text += text
+
+    return clean_text(combined_text)
 
 def clean_text(text):
     """

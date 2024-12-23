@@ -77,7 +77,6 @@ def extract_recipe(
         result = response.json()
         output = json.loads(result['response'])
         tags_and_notes = interpret_recipe(text=text, model=tag_model, temp=tag_temp, server_url=server_url)
-        print(tags_and_notes)
         output['tags'] = tags_and_notes['tags']
         output['recipe_notes'] = tags_and_notes['recipe_notes']
 
@@ -245,7 +244,7 @@ def process_recipe(
         *, 
         url: str = None, 
         images: list = None, 
-        html_file: str = None, 
+        html_files: list = None, 
         model: str = 'llama3.1', 
         tag_model: str = 'qwen2.5',
         recipe_temp: float = 0.4, 
@@ -271,7 +270,7 @@ def process_recipe(
     Returns:
         dict: The processed recipe with all structured information.
     """
-    provided_sources = sum([url is not None, images is not None, html_file is not None])
+    provided_sources = sum([url is not None, images is not None, html_files is not None])
     if provided_sources != 1:
         raise ValueError("You must provide exactly one of 'url', 'images', or 'html'.")
 
@@ -284,12 +283,13 @@ def process_recipe(
         with open(file_path, "wb" if isinstance(cleaned_text, bytes) else "w") as f:
             f.write(cleaned_text)
     elif images:
-        cleaned_text = extract_text_from_images(images)
-    elif html_file:
-        scraped_text = parse_html(html_file)
+        cleaned_text = extract_text_from_images(images, uuid=identifier)
+    elif html_files:
+        scraped_text = parse_html(html_files)
         cleaned_text = clean_text(scraped_text)
 
     recipe = extract_recipe(text=cleaned_text, recipe_temp=recipe_temp, tag_temp=tag_temp, model=model, tag_model=tag_model)
+    print('recipe processed')
     if post_process:
         processed_recipe = post_process_recipe(recipe, cleaned_text, temp=process_temp, model=model)
     else:
@@ -299,8 +299,6 @@ def process_recipe(
 
     if url:
         processed_recipe['url'] = url
-    if images:
-        processed_recipe['image_paths'] = images
 
     processed_recipe['uuid'] = identifier
     processed_recipe['user_notes'] = str()
