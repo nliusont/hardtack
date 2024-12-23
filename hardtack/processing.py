@@ -11,7 +11,7 @@ from hardtack.acquisition import extract_text_from_images, fetch_html_from_url, 
 
 def extract_recipe(
         text: str, 
-        model: str = 'llama3.1',
+        model: str = 'openai',
         recipe_temp: float = 0.3, 
         server_url: str = "http://192.168.0.19:11434") -> dict:
     """
@@ -102,7 +102,7 @@ def extract_recipe(
 
 
 
-def interpret_recipe(text: str, model: str = 'qwen2.5', temp: float = 0.5, server_url: str = "http://192.168.0.19:11434") -> dict:
+def interpret_recipe(text: str, model: str = 'openai', temp: float = 0.5, server_url: str = "http://192.168.0.19:11434") -> dict:
     """
     Extract tags and notes for a recipe using a model.
 
@@ -191,7 +191,7 @@ def interpret_recipe(text: str, model: str = 'qwen2.5', temp: float = 0.5, serve
         return {}
 
 
-def post_process_recipe(recipe: str, text: str, model: str = 'llama3.1', temp: float = 0.2, server_url: str = "http://192.168.0.19:11434"):
+def post_process_recipe(recipe: str, text: str, model: str = 'openai', temp: float = 0.2, server_url: str = "http://192.168.0.19:11434"):
     """
     Clean and refine the extracted recipe details to ensure consistency and standardization.
 
@@ -277,8 +277,8 @@ def process_recipe(
         url: str = None, 
         images: list = None, 
         html_files: list = None, 
-        model: str = 'llama3.1', 
-        tag_model: str = 'qwen2.5',
+        model: str = 'openai', 
+        tag_model: str = 'openai',
         recipe_temp: float = 0.4, 
         tag_temp: float = 0.5, 
         process_temp: float = 0.3,

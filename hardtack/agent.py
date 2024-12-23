@@ -11,7 +11,7 @@ import hardtack.search as search
 import hardtack.storage as storage
 import hardtack.function_registry as function_registry
 
-def find_single_recipe(*, user_desire: str, model: str = 'llama3.1', query_temp: float = 0.9, summary_temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
+def find_single_recipe(*, user_desire: str, model: str = 'openai', query_temp: float = 0.9, summary_temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
     """
     Find a single recipe from the database based on the user's input.
 
@@ -47,7 +47,7 @@ def show_recipe(*, recipe_uuid: str):
     st.session_state['selected_recipe_uuid'] = recipe_uuid
     return 'Sure! Take a look at this.'
 
-def edit_recipe(*, uuid: str, changes_to_make: str, model: str = 'llama3.1', query_temp: float = 0.3, server_url: str = "http://192.168.0.19:11434"):
+def edit_recipe(*, uuid: str, changes_to_make: str, model: str = 'openai', query_temp: float = 0.3, server_url: str = "http://192.168.0.19:11434"):
     """
     Edit a recipe by applying the specified changes.
 
@@ -66,7 +66,7 @@ def edit_recipe(*, uuid: str, changes_to_make: str, model: str = 'llama3.1', que
     json_response = storage.update_local_json_record(update_params=update_params, uuid=uuid)
     return 'The recipe has been updated!'
 
-def run_recommendation_engine(*, user_desire: str, model: str = 'llama3.1', query_temp: float = 0.9, summary_temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
+def run_recommendation_engine(*, user_desire: str, model: str = 'openai', query_temp: float = 0.9, summary_temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
     """
     Run a recommendation engine to suggest recipes based on the user's input.
 
@@ -106,7 +106,7 @@ def run_processing_pipeline(
         str: A message indicating the successful processing of the recipe.
     """
     if source_type == "url":
-        recipe = process_recipe(url=url, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='llama3.1', tag_model='qwen2.5', post_process=False)
+        recipe = process_recipe(url=url, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='openai', tag_model='openai', post_process=False)
 
     elif source_type == 'file':
         file_type = st.session_state['uploaded_file_type']
@@ -114,12 +114,12 @@ def run_processing_pipeline(
 
         if file_type == 'text/html':
             # Process HTML file
-            recipe = process_recipe(html_files=uploaded_files, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='llama3.1', tag_model='qwen2.5', post_process=False)
+            recipe = process_recipe(html_files=uploaded_files, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='openai', tag_model='openai', post_process=False)
             print(f"Successfully processed: {', '.join([x.name for x in uploaded_files])}")
 
         elif file_type.startswith('image/'):
             # Process image file
-            recipe = process_recipe(images=uploaded_files, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='llama3.1', tag_model='qwen2.5', post_process=False)
+            recipe = process_recipe(images=uploaded_files, recipe_temp=0.4, process_temp=0.3, tag_temp=0.5, model='openai', tag_model='openai', post_process=False)
             print(f"Successfully processed: {', '.join([x.name for x in uploaded_files])}")
 
         else:
@@ -135,7 +135,7 @@ def run_processing_pipeline(
     print(f"Successfully processed and saved: {recipe_save_path}")
     return f"Successfully processed and saved recipe with UUID: {recipe['uuid']}"
 
-def get_bot_response(message, model: str = 'llama3.1', temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
+def get_bot_response(message, model: str = 'openai', temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
 
     """
     Get a response from the chatbot based on the user's message.

@@ -10,7 +10,7 @@ import os
 
 def extract_text_from_images(
         image_paths: list, 
-        model: str = 'llama3.2-vision', 
+        model: str = 'openai', 
         server_url: str = "http://192.168.0.19:11434", 
         temp: float = 0.3,
         save_dir: str = 'data/images/',

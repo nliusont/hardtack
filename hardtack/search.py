@@ -10,7 +10,7 @@ from weaviate.classes.query import MetadataQuery
 from weaviate.classes.init import Auth
 
 
-def define_query_params(user_input: str, model: str = 'qwen2.5', query_temp: float = 0.5, server_url: str = "http://192.168.0.19:11434"):
+def define_query_params(user_input: str, model: str = 'openai', query_temp: float = 0.5, server_url: str = "http://192.168.0.19:11434"):
     """
     Define the parameters for a search query based on the user's input.
 
@@ -99,7 +99,7 @@ def define_query_params(user_input: str, model: str = 'qwen2.5', query_temp: flo
         return {}
 
 
-def query_vectors(query_params, collection_name='Recipe', num_matches=5):
+def query_vectors(query_params, collection_name='Recipe', num_matches=5, db='remote'):
     """
     Perform a similarity search using vectors based on the given query parameters.
 
@@ -122,7 +122,8 @@ def query_vectors(query_params, collection_name='Recipe', num_matches=5):
         weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
         client = weaviate.connect_to_weaviate_cloud(
             cluster_url=weaviate_url,
-            auth_credentials=Auth.api_key(weaviate_api_key))
+            auth_credentials=Auth.api_key(weaviate_api_key),
+            headers=headers)
         
     collection = client.collections.get(collection_name)
 
@@ -211,7 +212,7 @@ def retrieve_results(combined_scores, top_n=3, json_dir='data/json'):
 def summarize_results(
     user_input: str,
     results: str,
-    model: str = 'llama3.1',
+    model: str = 'openai',
     temp: float = 0.4,
     server_url: str = "http://192.168.0.19:11434",
     stream: bool = False
@@ -310,7 +311,7 @@ def summarize_results(
 def summarize_single_search(
     user_input: str,
     results: str,
-    model: str = 'llama3.1',
+    model: str = 'openai',
     temp: float = 0.4,
     server_url: str = "http://192.168.0.19:11434",
     stream: bool = False

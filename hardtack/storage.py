@@ -8,7 +8,7 @@ import requests
 import streamlit as st
 from openai import OpenAI
 
-def define_update_params(changes_to_make: str, uuid: str, model: str = 'llama3.1', query_temp: float = 0.3, server_url: str = "http://192.168.0.19:11434"):
+def define_update_params(changes_to_make: str, uuid: str, model: str = 'openai', query_temp: float = 0.3, server_url: str = "http://192.168.0.19:11434"):
     """
     Generate the parameters needed to update a recipe in the database based on user input.
 
@@ -155,7 +155,8 @@ def add_weaviate_record(
             weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
             client = weaviate.connect_to_weaviate_cloud(
                 cluster_url=weaviate_url,
-                auth_credentials=Auth.api_key(weaviate_api_key))
+                auth_credentials=Auth.api_key(weaviate_api_key),
+                headers=headers)
 
         recipes = client.collections.get(collection)
         uuid = recipes.data.insert(
@@ -194,7 +195,8 @@ def update_weaviate_record(update_params: dict, uuid: str, class_name: str = "Re
             weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
             client = weaviate.connect_to_weaviate_cloud(
                 cluster_url=weaviate_url,
-                auth_credentials=Auth.api_key(weaviate_api_key))
+                auth_credentials=Auth.api_key(weaviate_api_key),
+                headers=headers)
             
         collection = client.collections.get(class_name)
 
