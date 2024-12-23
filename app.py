@@ -29,6 +29,20 @@ st.title("hardtack")
 col1, col2 = st.columns(2)
 
 with col1:
+    with st.expander('Upload files'):
+        # File uploader widget
+        uploaded_files = st.file_uploader("Choose a file", accept_multiple_files=True)
+
+        # Check if a file is uploaded
+        if uploaded_files:
+            # Display file details
+            for file in uploaded_files:
+                st.write("Filename:", file.name)
+            file_type = uploaded_files[0].type
+            st.write("File type:", file_type)
+
+            st.session_state['uploaded_file_type'] = file_type
+            st.session_state['uploaded_files'] = uploaded_files
     # display chat messages from history on app rerun
     for message in st.session_state['chat_history']:
         with st.chat_message(message[0]):
@@ -52,7 +66,7 @@ with col1:
             
             with st.chat_message("assistant"):
                 if True:  # change to False if you want to disable streaming
-                    response = st.write_stream(get_bot_response(user_input))
+                    response = st.write_stream(get_bot_response(user_input, model='openai'))
                 else:
                     response = get_bot_response(user_input, stream=False)
             
