@@ -288,3 +288,49 @@ def retrieve_file_from_gcs(blob_name, bucket_name='hardtack-bucket'):
 
     print(f"File {blob_name} retrieved from GCS into memory.")
     return file_content
+
+def save_to_gcs(content, blob_name, bucket_name='hardtack-bucket', content_type=None):
+    """
+    Saves a file (JSON, HTML, or image) to Google Cloud Storage.
+
+    Args:
+        bucket_name (str): Name of the GCS bucket.
+        blob_name (str): Path to save the file in GCS.
+        content (str, dict, or bytes): Content to save. Can be a JSON dict, HTML string, or image bytes.
+        content_type (str): MIME type of the content (optional). If not provided, it will be inferred.
+
+    Returns:
+        None
+    """
+    try:
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+        # Initialize the GCS client
+        storage_client = storage.Client()
+
+        # Get the bucket and blob
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+
+        # Handle different content types
+        if isinstance(content, dict):
+            # JSON content
+            prefix = 'recipe/'
+            content_type = content_type or "application/json"
+            blob.upload_from_string(json.dumps(content), content_type=content_type)
+        elif isinstance(content, str):
+            # HTML or text content
+            prefix = 'html/'
+            content_type = content_type or "text/html"  # Default to HTML
+            blob.upload_from_string(content, content_type=content_type)
+        elif isinstance(content, bytes):
+            # Image or binary content
+            prefix = 'image/'
+            content_type = content_type or "application/octet-stream"  # Default to binary
+            blob.upload_from_string(content, content_type=content_type)
+        else:
+            raise ValueError("Unsupported content type. Use dict (JSON), str (HTML), or bytes (image).")
+
+        print(f"File saved to GCS at {bucket_name}/{blob_name} with content type {content_type}.")
+    except Exception as e:
+        raise Exception(f"Error saving file to GCS: {e}")

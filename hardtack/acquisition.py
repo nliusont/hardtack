@@ -4,6 +4,7 @@ import io
 import requests
 from openai import OpenAI
 from fake_useragent import UserAgent
+from hardtack.storage import save_to_gcs
 from bs4 import BeautifulSoup
 import re
 import os
@@ -107,7 +108,7 @@ def extract_text_from_images(
     return extracted_text
 
 
-def resize_and_encode_images(image_paths, save_dir, uuid, max_dimension: int = 1120) -> list:
+def resize_and_encode_images(image_paths, uuid, max_dimension: int = 1120) -> list:
     """
     Resize images so that the largest dimension is `max_dimension`, save them as PNG in the save_dir,
     and encode them as base64 strings for processing.
@@ -123,9 +124,6 @@ def resize_and_encode_images(image_paths, save_dir, uuid, max_dimension: int = 1
     """
     encoded_images = []
 
-    # Ensure the directory exists
-    os.makedirs(save_dir, exist_ok=True)
-
     for idx, image_input in enumerate(image_paths, start=1):
         try:
             # Check if input is a BytesIO object or file path
@@ -137,7 +135,6 @@ def resize_and_encode_images(image_paths, save_dir, uuid, max_dimension: int = 1
                 image = Image.open(image_input)
             elif isinstance(image_input, str):  # If it's an UploadedFile (Streamlit)
                 # Convert UploadedFile to BytesIO
-                print('door 3')
                 image = Image.open(io.BytesIO(image_input.getvalue()))
             else:
                 print(f"Unsupported file input: {image_input}")
@@ -153,11 +150,7 @@ def resize_and_encode_images(image_paths, save_dir, uuid, max_dimension: int = 1
                 print(f"Resizing image from {original_size} to {new_size}")
                 image = image.resize(new_size, Image.LANCZOS)
 
-            # Save the image as PNG with a unique name
             file_name = f"{uuid}-{idx}.png"
-            file_path = os.path.join(save_dir, file_name)
-            image.save(file_path, format="PNG")  # Save the image as PNG in the specified directory
-            print(f"Saved image: {file_path}")
 
             # Convert the image to bytes and encode as base64
             buffered = io.BytesIO()
@@ -165,6 +158,9 @@ def resize_and_encode_images(image_paths, save_dir, uuid, max_dimension: int = 1
             image_bytes = buffered.getvalue()
             encoded_image = base64.b64encode(image_bytes).decode('utf-8')
             encoded_images.append(encoded_image)
+
+            # save to GCS
+            save_to_gcs(file_name, content=image_bytes, content_type='image/png')
 
         except Exception as e:
             print(f"Error processing image {image_input}: {e}")
