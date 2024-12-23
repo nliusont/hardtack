@@ -1,9 +1,12 @@
 import streamlit as st
 import requests
 import json
+from google.cloud import storage
+from io import BytesIO
 from streamlit_float import *
 from hardtack import get_bot_response
 from hardtack.utils import format_recipe
+from hardtack.storage import retrieve_file_from_gcs
 import os
 
 # set the page title and layout
@@ -79,18 +82,17 @@ with col2:
             recipe_uuid = st.session_state['selected_recipe_uuid']
             
             # Construct the file path for the recipe JSON file
-            file_path = os.path.join('data', 'json', f'{recipe_uuid}.json')
+            blob_name = f'recipe/{recipe_uuid}.json'
             
-            if os.path.isfile(file_path):
-                try:
-                    # Read and display the JSON file
-                    with open(file_path, 'r') as file:
-                        recipe_data = json.load(file)
-                    
-                    # Call the function to display the recipe
-                    format_recipe(recipe_data)
+            try:
+                # Retrieve the JSON file from GCS
+                recipe_data = retrieve_file_from_gcs(bucket_name, blob_name)
+                recipe_data = json.load(recipe_data)
                 
-                except Exception as e:
-                    st.error(f"Error reading recipe file: {e}")
-            else:
-                st.warning(f"No recipe file found for UUID: {recipe_uuid}")
+                # Call the function to display the recipe
+                format_recipe(recipe_data)
+            
+            except Exception as e:
+                st.error(f"Error retrieving recipe: {e}")
+        else:
+            st.warning("No recipe selected.")

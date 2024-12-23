@@ -10,7 +10,7 @@ from weaviate.classes.query import MetadataQuery
 from weaviate.classes.init import Auth
 
 
-def define_query_params(user_input: str, model: str = 'openai', query_temp: float = 0.5, server_url: str = "http://192.168.0.19:11434"):
+def define_query_params(user_input: str, model: str = 'openai', query_temp: float = 0.3, server_url: str = "http://192.168.0.19:11434"):
     """
     Define the parameters for a search query based on the user's input.
 
@@ -38,16 +38,16 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
 
     For example, if the user is looking for desserts with walnuts and brown sugar you would decide to search the tags and shopping_list dimensions. You would return a JSON as below:
     {{
-        'dish_name':[],
-        'tags':['dessert', sweet],
-        'shopping_list':['walnuts', 'brown sugar']
+        "dish_name":[],
+        "tags":["dessert", "sweet"],
+        "shopping_list":["walnuts", "brown sugar"]
     }}
 
     Or if the user is looking for Coq Au Vin or similar dishes, you would return a JSON as below
     {{
-        'dish_name':['Coq Au Vin],
-        'tags':['stew', 'braised', 'savory', 'hearty', 'rustic'],
-        'shopping_list':['red wine']
+        "dish_name":["Coq Au Vin"],
+        "tags":["stew", "braised", "savory", "hearty", "rustic"],
+        "shopping_list":["red wine"]
     }}
     
     You do not need to explicitly defined a search dimension. The system knows you wish to search a given dimension if the list of query terms has more than one item. 
@@ -281,9 +281,7 @@ def summarize_results(
             )
             
             content = response.choices[0].message.content
-            content = content.replace('```json', '').replace('```', '')
-            result = json.loads(content)
-            return result
+            return content
         else:
             response = requests.post(
                 f"{server_url}/api/generate",
@@ -379,9 +377,7 @@ def summarize_single_search(
             )
             
             content = response.choices[0].message.content
-            content = content.replace('```json', '').replace('```', '')
-            result = json.loads(content)
-            return result
+            return content
         else:
             response = requests.post(
                 f"{server_url}/api/generate",

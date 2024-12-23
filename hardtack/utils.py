@@ -6,6 +6,8 @@ import json
 import re
 import streamlit as st
 import pandas as pd
+from google.cloud import storage
+import os
 
 def simulate_stream(text):
     """
@@ -219,3 +221,11 @@ def format_recipe(
                     else:
                         display_value = str(value)
                     st.markdown(f"{display_value}")
+
+def list_files(bucket_name):
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    storage_client = storage.Client()
+
+    blobs = storage_client.list_blobs(bucket_name)
+    for blob in blobs:
+        print(blob.name)

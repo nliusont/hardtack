@@ -3,8 +3,11 @@
 import json
 import os
 import weaviate
+from io import BytesIO
+from google.cloud import storage
 from weaviate.classes.init import Auth
 import requests
+
 import streamlit as st
 from openai import OpenAI
 
@@ -258,3 +261,30 @@ def update_local_json_record(update_params: dict, uuid: str, data_path: str = "d
     except Exception as e:
         print(f"Unexpected error: {e}")
         return {"error": f"Unexpected error: {e}"}
+
+def retrieve_file_from_gcs(blob_name, bucket_name='hardtack-bucket'):
+    """
+    Retrieves a file from GCS and loads it into memory.
+
+    Args:
+        bucket_name (str): Name of the GCS bucket.
+        blob_name (str): Name of the file in GCS.
+
+    Returns:
+        BytesIO: File content loaded into memory.
+    """
+    # Initialize the GCS client
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    storage_client = storage.Client()
+
+    # Get the bucket and blob
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+
+    # Download the file content into memory
+    file_content = BytesIO()
+    blob.download_to_file(file_content)
+    file_content.seek(0)  # Reset the file pointer to the beginning
+
+    print(f"File {blob_name} retrieved from GCS into memory.")
+    return file_content
