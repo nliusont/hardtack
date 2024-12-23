@@ -3,6 +3,7 @@
 import json
 import os
 import weaviate
+from weaviate.classes.init import Auth
 import requests
 import streamlit as st
 from openai import OpenAI
@@ -115,7 +116,8 @@ def define_update_params(changes_to_make: str, uuid: str, model: str = 'llama3.1
 
 def add_weaviate_record(
         recipe_json: dict,
-        collection: str = 'Recipe'
+        collection: str = 'Recipe',
+        db: str = 'remote'
     ):
     """
     Add a new recipe to the Weaviate database.
@@ -146,8 +148,15 @@ def add_weaviate_record(
         headers = {
             "X-OpenAI-Api-Key": os.getenv('OPENAI_API_KEY')
         }
+        if db=='local':
+            client = weaviate.connect_to_local(headers=headers)
+        else:
+            weaviate_url = os.environ["WEAVIATE_URL"]
+            weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+            client = weaviate.connect_to_weaviate_cloud(
+                cluster_url=weaviate_url,
+                auth_credentials=Auth.api_key(weaviate_api_key))
 
-        client = weaviate.connect_to_local(headers=headers)
         recipes = client.collections.get(collection)
         uuid = recipes.data.insert(
             properties=recipe_obj,
@@ -161,7 +170,7 @@ def add_weaviate_record(
         uuid = recipe_json['uuid']
         print(f'Recipe {uuid} could not be added due to error: {e}')
 
-def update_weaviate_record(update_params: dict, uuid: str, class_name: str = "Recipe"):
+def update_weaviate_record(update_params: dict, uuid: str, class_name: str = "Recipe", db: str = 'remote'):
     """
     Update an existing recipe in the Weaviate database.
 
@@ -177,7 +186,16 @@ def update_weaviate_record(update_params: dict, uuid: str, class_name: str = "Re
         headers = {
             "X-OpenAI-Api-Key": os.getenv('OPENAI_API_KEY')
         }
-        client = weaviate.connect_to_local(headers=headers)
+
+        if db=='local':
+            client = weaviate.connect_to_local(headers=headers)
+        else:
+            weaviate_url = os.environ["WEAVIATE_URL"]
+            weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+            client = weaviate.connect_to_weaviate_cloud(
+                cluster_url=weaviate_url,
+                auth_credentials=Auth.api_key(weaviate_api_key))
+            
         collection = client.collections.get(class_name)
 
         collection.data.update(

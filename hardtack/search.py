@@ -7,6 +7,7 @@ import streamlit as st
 import os
 from openai import OpenAI
 from weaviate.classes.query import MetadataQuery
+from weaviate.classes.init import Auth
 
 
 def define_query_params(user_input: str, model: str = 'qwen2.5', query_temp: float = 0.5, server_url: str = "http://192.168.0.19:11434"):
@@ -114,7 +115,15 @@ def query_vectors(query_params, collection_name='Recipe', num_matches=5):
     headers = {
         "X-OpenAI-Api-Key": os.getenv('OPENAI_API_KEY')
     }
-    client = weaviate.connect_to_local(headers=headers)
+    if db=='local':
+        client = weaviate.connect_to_local(headers=headers)
+    else:
+        weaviate_url = os.environ["WEAVIATE_URL"]
+        weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+        client = weaviate.connect_to_weaviate_cloud(
+            cluster_url=weaviate_url,
+            auth_credentials=Auth.api_key(weaviate_api_key))
+        
     collection = client.collections.get(collection_name)
 
     searched_dimensions = [dim for dim, terms in query_params.items() if len(terms) > 0]
