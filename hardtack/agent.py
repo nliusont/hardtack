@@ -212,8 +212,8 @@ def get_bot_response(message, model: str = 'openai', temp: float = 0.6, server_u
                 temperature=temp
             )
 
-            content = content.replace('```json', '')
             content = response.choices[0].message.content
+            content = content.replace('```json', '')
         else:
             response = requests.post(f"{server_url}/api/chat", json={
                 "model": model, 
