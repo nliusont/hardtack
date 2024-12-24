@@ -1,0 +1,9 @@
+streamlit
+pandas
+requests
+fake_useragent
+beautifulsoup4
+weaviate-client
+streamlit_float
+google-cloud-storage
+openai
