@@ -6,6 +6,7 @@ from openai import OpenAI
 from fake_useragent import UserAgent
 from hardtack.storage import save_to_gcs
 from bs4 import BeautifulSoup
+import streamlit as st
 import re
 import os
 
@@ -14,7 +15,6 @@ def extract_text_from_images(
         model: str = 'openai', 
         server_url: str = "http://192.168.0.19:11434", 
         temp: float = 0.3,
-        save_dir: str = 'data/images/',
         uuid: str = ''
     ) -> dict:
     """
@@ -31,7 +31,7 @@ def extract_text_from_images(
         dict: Extracted recipe information as a structured JSON object.
     """
     # Step 1: Resize images and encode them in base64
-    encoded_images = resize_and_encode_images(image_paths, save_dir, uuid)
+    encoded_images = resize_and_encode_images(image_paths, uuid)
     if not encoded_images:
         print("No images available for extraction.")
         return {}
@@ -126,17 +126,19 @@ def resize_and_encode_images(image_paths, uuid, max_dimension: int = 1120) -> li
 
     for idx, image_input in enumerate(image_paths, start=1):
         try:
-            # Check if input is a BytesIO object or file path
             if isinstance(image_input, io.BytesIO):
-                # Open image from BytesIO object
-                image = Image.open(image_input)
+                # Open image from BytesIO object directly
+                image_bytes = io.BytesIO(image_input.getvalue())
+                image = Image.open(image_bytes)
+
             elif isinstance(image_input, str) and os.path.isfile(os.path.expanduser(image_input)):
-                # Open image from file path
-                image = Image.open(image_input)
-            elif isinstance(image_input, str):  # If it's an UploadedFile (Streamlit)
-                # Convert UploadedFile to BytesIO
-                image = Image.open(io.BytesIO(image_input.getvalue()))
+                # Expand and open the image from a file path
+                file_path = os.path.expanduser(image_input)
+                image = Image.open(file_path)
+                print('DOOR 2')
+
             else:
+                # Unsupported input type
                 print(f"Unsupported file input: {image_input}")
                 continue
 

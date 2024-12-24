@@ -79,9 +79,9 @@ with col1:
 with col2:
     if 'selected_recipe_uuid' in st.session_state:
         if st.session_state['selected_recipe_uuid']!='No recipe selected':
-            recipe_uuid = st.session_state['selected_recipe_uuid']
+            recipe_uuid = st.session_state['selected_recipe_uuid'] 
             
-            # Construct the file path for the recipe JSON file
+            # Construct the blob name for the recipe JSON file
             blob_name = f'recipe/{recipe_uuid}.json'
             
             try:

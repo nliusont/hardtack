@@ -7,6 +7,7 @@ import os
 from openai import OpenAI
 from datetime import datetime
 from hardtack.acquisition import extract_text_from_images, fetch_html_from_url, parse_html, clean_text
+from hardtack.storage import save_to_gcs
 
 
 def extract_recipe(
@@ -99,8 +100,6 @@ def extract_recipe(
     except Exception as e:
         print(f"Error communicating with LLM server: {e}")
         return {}
-
-
 
 def interpret_recipe(text: str, model: str = 'openai', temp: float = 0.5, server_url: str = "http://192.168.0.19:11434") -> dict:
     """
@@ -311,14 +310,14 @@ def process_recipe(
     if url:
         html = fetch_html_from_url(url)
         cleaned_text = parse_html([html])
-        file_path = os.path.join(f'{save_dir}parsed_html/', f'{identifier}.txt')
-        with open(file_path, "wb" if isinstance(cleaned_text, bytes) else "w") as f:
-            f.write(cleaned_text)
+        # save to GCS
+        save_to_gcs(f'{identifier}.txt', content=cleaned_text, content_type='image/txt')
     elif images:
         cleaned_text = extract_text_from_images(images, uuid=identifier, model=model)
     elif html_files:
-        scraped_text = parse_html(html_files)
+        scraped_text = parse_html(html_files, uuid=identifier)
         cleaned_text = clean_text(scraped_text)
+        save_to_gcs(f'{identifier}.txt', content=cleaned_text, content_type='image/txt')
 
     recipe = extract_recipe(text=cleaned_text, recipe_temp=recipe_temp, model=model)
     tags_and_notes = interpret_recipe(text=cleaned_text, model=tag_model, temp=tag_temp)

@@ -5,9 +5,8 @@ import os
 import weaviate
 from io import BytesIO
 from google.cloud import storage
-from weaviate.classes.init import Auth
+from weaviate.classes.init import Auth, AdditionalConfig, Timeout
 import requests
-
 import streamlit as st
 from openai import OpenAI
 
@@ -64,7 +63,7 @@ def define_update_params(changes_to_make: str, uuid: str, model: str = 'openai',
         "update_params": dict()
     }}
 
-    **NEVER CREATE NEW KEYS. Only update existing keys in the existing JSON structure. Your keys in update_params must be an existing key in the recipe JSON. Use your best judgement.
+    **NEVER CREATE NEW KEYS. Only update existing keys in the existing JSON structure. Your keys in update_params must be a verbatim existing key in the recipe JSON and must not be formatted with any markdown. Use your best judgement.
 
     Keep in mind, that if the user wants you to add an imte to a list. You should pass the entire new list (old list + new item) as an argument.
     For example, if the user wants to add the tag "Spicy" and the existing tags are ["American", "Easy"],
@@ -159,7 +158,12 @@ def add_weaviate_record(
             client = weaviate.connect_to_weaviate_cloud(
                 cluster_url=weaviate_url,
                 auth_credentials=Auth.api_key(weaviate_api_key),
-                headers=headers)
+                headers=headers,
+                skip_init_checks=True,
+                additional_config=AdditionalConfig(
+                timeout=Timeout(init=30, query=60, insert=120)
+              )  # Values in seconds
+        )
 
         recipes = client.collections.get(collection)
         uuid = recipes.data.insert(
@@ -199,7 +203,12 @@ def update_weaviate_record(update_params: dict, uuid: str, class_name: str = "Re
             client = weaviate.connect_to_weaviate_cloud(
                 cluster_url=weaviate_url,
                 auth_credentials=Auth.api_key(weaviate_api_key),
-                headers=headers)
+                headers=headers,
+                skip_init_checks=True,
+                additional_config=AdditionalConfig(
+                timeout=Timeout(init=30, query=60, insert=120)
+              )  # Values in seconds
+        )
             
         collection = client.collections.get(class_name)
 
@@ -286,10 +295,13 @@ def retrieve_file_from_gcs(blob_name, bucket_name='hardtack-bucket'):
     blob.download_to_file(file_content)
     file_content.seek(0)  # Reset the file pointer to the beginning
 
+    storage_client.close()
+
     print(f"File {blob_name} retrieved from GCS into memory.")
     return file_content
 
-def save_to_gcs(content, blob_name, bucket_name='hardtack-bucket', content_type=None):
+def save_to_gcs(blob_name, content=str, bucket_name='hardtack-bucket', content_type=None):
+
     """
     Saves a file (JSON, HTML, or image) to Google Cloud Storage.
 
@@ -317,20 +329,109 @@ def save_to_gcs(content, blob_name, bucket_name='hardtack-bucket', content_type=
             # JSON content
             prefix = 'recipe/'
             content_type = content_type or "application/json"
-            blob.upload_from_string(json.dumps(content), content_type=content_type)
         elif isinstance(content, str):
-            # HTML or text content
-            prefix = 'html/'
-            content_type = content_type or "text/html"  # Default to HTML
-            blob.upload_from_string(content, content_type=content_type)
+            # Text content
+            prefix = 'txt/'
+            content_type = content_type or "text/plain" 
         elif isinstance(content, bytes):
             # Image or binary content
             prefix = 'image/'
             content_type = content_type or "application/octet-stream"  # Default to binary
-            blob.upload_from_string(content, content_type=content_type)
         else:
             raise ValueError("Unsupported content type. Use dict (JSON), str (HTML), or bytes (image).")
+        
+        
+        full_blob_name = f"{prefix}{blob_name}"
+
+        # Get the bucket and blob
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(full_blob_name)
+
+        # Upload the content
+        blob.upload_from_string(
+            json.dumps(content) if isinstance(content, dict) else content,
+            content_type=content_type
+        )
+
+        storage_client.close()
 
         print(f"File saved to GCS at {bucket_name}/{blob_name} with content type {content_type}.")
     except Exception as e:
         raise Exception(f"Error saving file to GCS: {e}")
+    
+def update_gcs_json_record(update_params: dict, uuid: str, bucket_name: str = "hardtack-bucket", gcs_path_prefix: str = "recipe"):
+
+    """
+    Update an existing JSON record stored in Google Cloud Storage.
+
+    Args:
+        update_params (dict): The fields to update in the JSON record.
+        uuid (str): The UUID of the JSON record to update.
+        bucket_name (str): The name of the GCS bucket where the JSON file is stored.
+        gcs_path_prefix (str): The path prefix in the bucket where the JSON files are stored.
+
+    Returns:
+        dict: The result of the update, either success message or error details.
+    """
+    try:
+
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+
+        # Initialize the GCS client
+        storage_client = storage.Client()
+
+        # Construct the full blob path
+        blob_name = f"{gcs_path_prefix}/{uuid}.json"
+
+        # Get the bucket and blob
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_name)
+
+        # Check if the file exists in GCS
+        if not blob.exists():
+            raise FileNotFoundError(f"No file found for UUID: {uuid} at {blob_name}")
+
+        # Download the existing JSON content
+        file_content = blob.download_as_text()
+        recipe_data = json.loads(file_content)
+
+        # Update the fields specified in update_params
+        for key, value in update_params['update_params'].items():
+            recipe_data[key] = value
+
+        # Convert the updated JSON to a string and re-upload it to GCS
+        blob.upload_from_string(
+            json.dumps(recipe_data, indent=4),
+            content_type="application/json"
+        )
+
+        print(f"Successfully updated GCS JSON record for UUID {uuid}")
+        storage_client.close()
+        return {"status": "success", "message": f"Updated JSON file for UUID {uuid}"}
+
+    except FileNotFoundError as e:
+        print(f"File not found: {e}")
+        return {"error": f"File not found: {e}"}
+
+    except json.JSONDecodeError as e:
+        print(f"Error parsing JSON file: {e}")
+        return {"error": f"Error parsing JSON file: {e}"}
+
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        return {"error": f"Unexpected error: {e}"}
+     
+def delete_weaviate_object(uuid=str, collection: str = 'Recipe'):
+    weaviate_url = os.environ["WEAVIATE_URL"]
+    weaviate_api_key = os.environ["WEAVIATE_API_KEY"]
+
+    client = weaviate.connect_to_weaviate_cloud(
+        cluster_url=weaviate_url,
+        auth_credentials=Auth.api_key(weaviate_api_key))
+
+    collection = client.collections.get(collection)
+    collection.data.delete_by_id(uuid)
+
+    client.close()
+
+    print(f'Successfully deleted object: {uuid}')

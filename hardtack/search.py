@@ -7,7 +7,8 @@ import streamlit as st
 import os
 from openai import OpenAI
 from weaviate.classes.query import MetadataQuery
-from weaviate.classes.init import Auth
+from weaviate.classes.init import Auth, AdditionalConfig, Timeout
+from hardtack.storage import retrieve_file_from_gcs
 
 
 def define_query_params(user_input: str, model: str = 'openai', query_temp: float = 0.3, server_url: str = "http://192.168.0.19:11434"):
@@ -123,7 +124,12 @@ def query_vectors(query_params, collection_name='Recipe', num_matches=5, db='rem
         client = weaviate.connect_to_weaviate_cloud(
             cluster_url=weaviate_url,
             auth_credentials=Auth.api_key(weaviate_api_key),
-            headers=headers)
+            headers=headers,
+            skip_init_checks=True,
+            additional_config=AdditionalConfig(
+                timeout=Timeout(init=30, query=60, insert=120)
+              )  # Values in seconds
+        )
         
     collection = client.collections.get(collection_name)
 
@@ -194,17 +200,14 @@ def retrieve_results(combined_scores, top_n=3, json_dir='data/json'):
     combined_json = {}
 
     for i, (recipe_uuid, score) in enumerate(top_recipes, start=1):
-        json_path = os.path.join(json_dir, f"{recipe_uuid}.json")
+        blob_name = f"recipe/{recipe_uuid}.json"
         
-        if os.path.exists(json_path):
-            try:
-                with open(json_path, 'r') as file:
-                    recipe_data = json.load(file)
-                    combined_json[f"recipe_{i}"] = recipe_data  # Store it as recipe_1, recipe_2, etc.
-            except Exception as e:
-                print(f"Error loading {json_path}: {e}")
-        else:
-            print(f"Error: The file for UUID {recipe_uuid} does not exist at {json_path}")
+        try:
+            recipe_file = retrieve_file_from_gcs(blob_name)
+            recipe_data = json.load(recipe_file)
+            combined_json[f"recipe_{i}"] = recipe_data  # Store it as recipe_1, recipe_2, etc.
+        except Exception as e:
+            print(f"Error loading {blob_name}: {e}")
 
     return combined_json
 
