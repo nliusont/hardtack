@@ -82,7 +82,7 @@ def handle_function_call(function_call: dict) -> str:
             func = FUNCTION_REGISTRY[func_name]
             try:
                 result = func(**args)  # Call the function with the provided arguments
-                print(f"Function '{func_name}' called successfully.")
+                print(f"Function '{func_name}' called successfully with parameters: {function_call['arguments']}")
                 return result
             except Exception as e:
                 return f"Error calling function '{func_name}': {e}"
