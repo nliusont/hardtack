@@ -51,6 +51,29 @@ else:
     col1, col2 = st.columns(2)
 
     with col1:
+        st.divider()
+        if 'selected_recipe_uuid' in st.session_state:
+            if st.session_state['selected_recipe_uuid']!='No recipe selected':
+                recipe_uuid = st.session_state['selected_recipe_uuid'] 
+                
+                # Construct the blob name for the recipe JSON file
+                blob_name = f'recipe/{recipe_uuid}.json'
+                
+                try:
+                    # Retrieve the JSON file from GCS
+                    recipe_data = retrieve_file_from_gcs(blob_name)
+                    recipe_data = json.load(recipe_data)
+                    
+                    # Call the function to display the recipe
+                    format_recipe(recipe_data)
+                
+                except Exception as e:
+                    st.error(f"Error retrieving recipe: {e}")
+            else:
+                st.warning("No recipe selected.")
+    
+    with col2:
+        st.divider()
         with st.expander('Upload files'):
             # File uploader widget
             uploaded_files = st.file_uploader("Choose a file", accept_multiple_files=True)
@@ -94,24 +117,3 @@ else:
                 
                 # add assistant response to chat history
                 st.session_state['chat_history'].append(('assistant', response))
-
-    with col2:
-        if 'selected_recipe_uuid' in st.session_state:
-            if st.session_state['selected_recipe_uuid']!='No recipe selected':
-                recipe_uuid = st.session_state['selected_recipe_uuid'] 
-                
-                # Construct the blob name for the recipe JSON file
-                blob_name = f'recipe/{recipe_uuid}.json'
-                
-                try:
-                    # Retrieve the JSON file from GCS
-                    recipe_data = retrieve_file_from_gcs(blob_name)
-                    recipe_data = json.load(recipe_data)
-                    
-                    # Call the function to display the recipe
-                    format_recipe(recipe_data)
-                
-                except Exception as e:
-                    st.error(f"Error retrieving recipe: {e}")
-            else:
-                st.warning("No recipe selected.")
