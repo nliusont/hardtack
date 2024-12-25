@@ -83,10 +83,10 @@ else:
                 # add user message to chat history
                 st.session_state['chat_history'].append(('user', user_input))
                 
-                with st.chat_message("user"):
+                with st.chat_message("user", avatar="🧑‍🍳"):
                     st.markdown(user_input)
                 
-                with st.chat_message("assistant"):
+                with st.chat_message("assistant", avatar="🕵️"):
                     if True:  # change to False if you want to disable streaming
                         response = st.write_stream(get_bot_response(user_input, model='openai'))
                     else:
