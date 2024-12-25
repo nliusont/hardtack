@@ -7,3 +7,4 @@ weaviate-client
 streamlit_float
 google-cloud-storage
 openai
+lxml
