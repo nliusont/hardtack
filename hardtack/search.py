@@ -153,13 +153,13 @@ def query_vectors(query_params, collection_name='Recipe', num_matches=5, db='rem
     searched_dimensions = [dim for dim, terms in query_params.items() if len(terms) > 0 and dim is not 'rating']
 
     operand_mapping = {
-        "GreaterThan": lambda v: Filter.by_property("rating").GreaterThan(v),
-        "GreaterThanEqual": lambda v: Filter.by_property("rating").GreaterThanEqual(v),
-        "LessThan": lambda v: Filter.by_property("rating").LessThan(v),
-        "LessThanEqual": lambda v: Filter.by_property("rating").LessThanEqual(v),
-        "Equal": lambda v: Filter.by_property("rating").Equal(v),
-        "NotEqual": lambda v: Filter.by_property("rating").NotEqual(v),
-        "IsNull": lambda _: Filter.by_property("rating").IsNull(),
+        "greater_than": lambda v: Filter.by_property("rating").greater_than(v),
+        "greater_or_equal": lambda v: Filter.by_property("rating").greater_or_equal(v),
+        "less_than": lambda v: Filter.by_property("rating").less_than(v),
+        "less_or_equal": lambda v: Filter.by_property("rating").less_or_equal(v),
+        "equal": lambda v: Filter.by_property("rating").equal(v),
+        "no_equal": lambda v: Filter.by_property("rating").not_equal(v),
+        "is_null": lambda _: Filter.by_property("rating").is_null(),
     }
 
     # determine if a rating filter is needed
