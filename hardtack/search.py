@@ -114,7 +114,7 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
             result = response.json()
             return json.loads(result['response'])
     except Exception as e:
-        print(f"Error communicating with the server: {e}")
+        print(f"define_query_params error communicating with the server: {e}")
         return {}
 
 
@@ -353,9 +353,9 @@ def summarize_results(
                 data = response.json()
                 return data['response']
             else:
-                return f"Error: Received status code {response.status_code} from the server."
+                return f"summarize_results error: Received status code {response.status_code} from the server."
     except requests.exceptions.RequestException as e:
-        return f"Error: Could not connect to the server. Details: {e}"
+        return f"summarize_results error: Could not connect to the server. Details: {e}"
 
 
 def summarize_single_search(
@@ -449,6 +449,6 @@ def summarize_single_search(
                 data = response.json()
                 return data['response']
             else:
-                return f"Error: Received status code {response.status_code} from the server."
+                return f"summarize_single_search error: Received status code {response.status_code} from the server."
     except requests.exceptions.RequestException as e:
-        return f"Error: Could not connect to the server. Details: {e}"
+        return f"summarize_single_search error: Could not connect to the server. Details: {e}"

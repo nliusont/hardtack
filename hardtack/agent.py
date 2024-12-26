@@ -229,7 +229,7 @@ def get_bot_response(message, model: str = 'openai', temp: float = 0.6, server_u
                 data = response.json()
                 content = data.get("message", {}).get("content", "")
             else:
-                yield f"Error: Received status code {response.status_code} from the bot server."
+                yield f"get_bot_response error: Received status code {response.status_code} from the bot server."
         
         function_call = utils.extract_function_call(content)
         if function_call:  # If a function call was detected
@@ -242,7 +242,7 @@ def get_bot_response(message, model: str = 'openai', temp: float = 0.6, server_u
                 yield chunk
 
     except requests.exceptions.RequestException as e:
-        yield f"Error: Could not connect to the bot server. Details: {e}"
+        yield f"get_bot_response error: Could not connect to the bot server. Details: {e}"
 
 # Now we update the function registry after the functions are defined
 function_registry.FUNCTION_REGISTRY = {
