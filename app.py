@@ -1,8 +1,5 @@
 import streamlit as st
-import requests
-import json
 from google.cloud import storage
-from io import BytesIO
 from streamlit_float import *
 from hardtack import get_bot_response
 from hardtack.utils import format_recipe
@@ -41,8 +38,6 @@ else:
     if 'selected_recipe_uuid' not in st.session_state:
         st.session_state['selected_recipe_uuid'] = 'No recipe selected'
         st.session_state['selected_recipe'] = {}
-    else:
-        print(st.session_state['selected_recipe_uuid'])
     
 
     # initialize float UI
@@ -52,30 +47,8 @@ else:
     st.title("hardtack")
 
     col1, col2 = st.columns(2)
-
-    with col1:
-        st.divider()
-        if 'selected_recipe_uuid' in st.session_state:
-            if st.session_state['selected_recipe_uuid']!='No recipe selected':
-                recipe_uuid = st.session_state['selected_recipe_uuid'] 
-                
-                # Construct the blob name for the recipe JSON file
-                blob_name = f'recipe/{recipe_uuid}.json'
-                
-                try:
-                    # Retrieve the JSON file from GCS
-                    recipe_data = retrieve_file_from_gcs(blob_name)
-                    recipe_data = json.load(recipe_data)
-                    
-                    # Call the function to display the recipe
-                    format_recipe(recipe_data)
-                
-                except Exception as e:
-                    st.error(f"Error retrieving recipe: {e}")
-            else:
-                st.warning("No recipe selected.")
     
-    with col2:
+    with col1:
         st.divider()
         with st.expander('Upload files'):
             # File uploader widget
@@ -120,3 +93,16 @@ else:
                 
                 # add assistant response to chat history
                 st.session_state['chat_history'].append(('assistant', response))
+    with col2:
+        st.divider()
+        if 'selected_recipe_uuid' in st.session_state:
+            if st.session_state['selected_recipe_uuid']!='No recipe selected':
+                recipe_uuid = st.session_state['selected_recipe_uuid'] 
+
+                recipe_data = st.session_state['selected_recipe'] 
+                
+                # Call the function to display the recipe
+                format_recipe(recipe_data)
+                
+            else:
+                st.warning("No recipe selected.")
