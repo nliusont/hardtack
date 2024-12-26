@@ -108,19 +108,18 @@ def format_recipe(
     
     # display recipe title
     recipe_title = recipe_data.get('dish_name', 'Unnamed Recipe')
-    already_cooked = recipe_data.get('cooked_already', False)
-
-    # add checkmark if already cooked
-    if already_cooked:
-        recipe_title += " ✅"
 
     st.subheader(f"{recipe_title}")
 
     # extract relevant information to display in a single line
     source_name = recipe_data.get('source_name', 'Unknown Source')
-    user_rating = recipe_data.get('user_rating', None)
+    user_rating = recipe_data.get('rating', None)
     active_time = recipe_data.get('active_time', None)
     total_time = recipe_data.get('total_time', None)
+
+    # add checkmark if already cooked
+    if user_rating is not None:
+        recipe_title += " ✅"
 
     # create the single-line display
     inline_elements = []

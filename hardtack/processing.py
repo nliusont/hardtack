@@ -42,6 +42,7 @@ def extract_recipe(
     - total_time - total cook time from start to finish in minutes
     - source_name - NYTimes, Hellofresh, Blue Apron, Serious Eats, etc.
     - author - The name of the person who developed the recipe, if available.
+    - servings - The number of servings the recipe creates. If the recipe provides a range, choose the midpoint integer of the range (rounding down if needed).
 
     Return the result as a JSON object, structured as below:
 
@@ -55,6 +56,7 @@ def extract_recipe(
     "source_name": str(),
     "author": str(),
     "shopping_list": list(str()),
+    "servings": int()
     }}
 
     Text for extraction: 
@@ -239,7 +241,8 @@ def post_process_recipe(recipe: str, text: str, model: str = 'openai', temp: flo
         "author": str(),
         "shopping_list": list(str()),
         "tags": list(str()),
-        "recipe_notes": list(str())
+        "recipe_notes": list(str()),
+        "servings":int()
     }}
 
     Extracted recipe:
@@ -336,7 +339,6 @@ def process_recipe(
 
     processed_recipe['uuid'] = identifier
     processed_recipe['user_notes'] = str()
-    processed_recipe['user_rating'] = None
-    processed_recipe['cooked_already'] = bool()
+    processed_recipe['rating'] = None
 
     return processed_recipe

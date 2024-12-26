@@ -11,7 +11,7 @@ import os
 gcloud_key = os.environ.get("GCLOUD_SERVICE_KEY")
 
 if gcloud_key:
-    # write the key to a file (if needed)
+    # write the key to a file
     key_path = "/tmp/gcloud-key.json"
     with open(key_path, "w") as key_file:
         key_file.write(gcloud_key)

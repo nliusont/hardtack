@@ -138,13 +138,14 @@ def add_weaviate_record(
             "tags": recipe_json["tags"],
             "source_name": recipe_json["source_name"],
             "author_name": recipe_json["author"],
-            "user_rating": None,
-            "cooked_already": False,
+            "rating": recipe_json["rating"],
             "user_notes": recipe_json["user_notes"],
             "active_time": int(recipe_json["active_time"]),
             "total_time": int(recipe_json["total_time"]),
             "cooking_steps": recipe_json["cooking_steps"],
             "recipe_notes": recipe_json["recipe_notes"],
+            "servings":recipe_json['servings'],
+            'date_added':recipe_json['date_added']
         }
 
         headers = {

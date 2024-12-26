@@ -32,6 +32,7 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
     - dish_name - The name of the dish.
     - tags - Tags that describe the dish. These cover meal types (e.g. dinner), dish types (e.g. soup, salad, sandwich), flavor profiles (e.g. spicy, sweet), cuisines (e.g. Indian, Mexican), and cooking styles or equipment (e.g. Pressure cooker, easy)
     - shopping_list - This is of the ingredients that go in the dish.
+    - source_author - The name of the publication/author where the recipe was sourced. This can be things like a website, book, publication, app, or person.
 
     Your job is to decide which of the above dimensions you would like to search (one or many) and then to decide what your search query terms for that dimension should be.
     The system will take your decision and do a similarity search with embeddings of your search queries. Use your knowledge of cooking and food to generate relevant tags, dish names or ingredients to find a matching recipe.
