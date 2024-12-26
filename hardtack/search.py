@@ -38,7 +38,7 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
     - source_author - The name of the publication/author where the recipe was sourced. This can be things like a website, book, publication, app, or person.
 
     Explicit filtering is available for the following dimensions:
-    - rating - the past rating of the dish by the user (float). Dishes that have not been cooked have a rating of Null while dishes that have been cooked have a numerical 0-5 rating. To search by rating, provide a tuple of the numerical value and the operator. Available operators are:
+    - rating - the past rating of the dish by the user (float). Dishes that have not been cooked have a rating of Null while dishes that have been cooked have a numerical 0-5 rating. To search by rating, provide a list of the numerical value and the operator. Available operators are:
         - Equal
         - NotEqual
         - GreaterThan
@@ -63,11 +63,11 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
         "dish_name":["Coq Au Vin"],
         "tags":["stew", "braised", "savory", "hearty", "rustic"],
         "shopping_list":["red wine"],
-        "rating":(3.0, "GreaterThanEqual")
+        "rating":[3.0, "GreaterThanEqual"]
     }}
     
     You do not need to explicitly defined a search dimension. The system knows you wish to search a given dimension if the list of query terms has more than one item. 
-    To search for dishes that have not been cooked, provide a tuple of (None, isNull).
+    To search for dishes that have not been cooked, provide a one item list of [isNull].
     
     Restrictions:
     Do not add ingredients to the shopping list that the user has not specified.
@@ -149,18 +149,46 @@ def query_vectors(query_params, collection_name='Recipe', num_matches=5, db='rem
         
     collection = client.collections.get(collection_name)
 
-    searched_dimensions = [dim for dim, terms in query_params.items() if len(terms) > 0]
+    # get total # of searched dimensions for scoring
+    searched_dimensions = [dim for dim, terms in query_params.items() if len(terms) > 0 and dim is not 'rating']
+
+    operand_mapping = {
+        "GreaterThan": lambda v: Filter.by_property("rating").GreaterThan(v),
+        "GreaterThanEqual": lambda v: Filter.by_property("rating").GreaterThanEqual(v),
+        "LessThan": lambda v: Filter.by_property("rating").LessThan(v),
+        "LessThanEqual": lambda v: Filter.by_property("rating").LessThanEqual(v),
+        "Equal": lambda v: Filter.by_property("rating").Equal(v),
+        "NotEqual": lambda v: Filter.by_property("rating").NotEqual(v),
+        "IsNull": lambda _: Filter.by_property("rating").IsNull(),
+    }
+
+    # determine if a rating filter is needed
+    rating_filter = None
+    if len(query_params.get('rating', [])) > 0:
+        value, operator = query_params['rating']
+        if operator in operand_mapping:
+            rating_filter = operand_mapping[operator](value)
 
     recipe_distances = {}
     for dimension, query_terms in query_params.items():
-        if len(query_terms) > 0:
+        if len(query_terms) > 0 and dimension != 'rating':
             search_query = ','.join(query_terms)
-            response = collection.query.near_text(
-                query=search_query,
-                limit=num_matches,
-                target_vector=[f"{dimension}_vector"], 
-                return_metadata=MetadataQuery(distance=True)
-            )
+
+            if rating_filter:
+                response = collection.query.near_text(
+                    query=search_query,
+                    limit=num_matches,
+                    target_vector=[f"{dimension}_vector"],
+                    return_metadata=MetadataQuery(distance=True),
+                    filters=rating_filter
+                )
+            else:
+                response = collection.query.near_text(
+                    query=search_query,
+                    limit=num_matches,
+                    target_vector=[f"{dimension}_vector"],
+                    return_metadata=MetadataQuery(distance=True)
+                )
 
             for obj in response.objects:
                 uuid = str(obj.uuid)
