@@ -149,7 +149,7 @@ def run_processing_pipeline(
     storage.save_to_gcs(f"{recipe['uuid']}.json", content=recipe, content_type='application/json')
 
     # display it
-    show_recipe = show_recipe(recipe_uuid=recipe['uuid'])
+    recipe_return_text = show_recipe(recipe_uuid=recipe['uuid'])
 
     print(f"Successfully processed and saved: {recipe['uuid']}")
     return f"I successfully processed and saved the recipe {recipe['dish_name']}. Take a look!"
