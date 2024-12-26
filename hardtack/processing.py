@@ -103,7 +103,7 @@ def extract_recipe(
         print(f"Error communicating with LLM server: {e}")
         return {}
 
-def interpret_recipe(text: str, model: str = 'openai', temp: float = 0.5, server_url: str = "http://192.168.0.19:11434") -> dict:
+def interpret_recipe(text: str, model: str = 'openai', temp: float = 0.3, server_url: str = "http://192.168.0.19:11434") -> dict:
     """
     Extract tags and notes for a recipe using a model.
 
