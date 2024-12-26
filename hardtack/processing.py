@@ -140,7 +140,7 @@ def interpret_recipe(text: str, model: str = 'openai', temp: float = 0.3, server
             - Seasonality/Context/Vibes (e.g., Fall, Summer, Comfort Food, Family-Style, Holidays, Indulgent, Healthy, Cozy, Light, Comforting)
             
         2. Recipe Notes: Provide practical cooking tips that help someone prepare the dish. These can include tips on substitutions, techniques, presentation, or serving suggestions. 
-        Do not include the dish name or any history, just helpful tips.
+        Do not include the dish name or any history, just helpful tips. The tips should only come from the recipe text itself, do not augment with your own knowledge or tips. If the recipe does not contain any additional tips or suggestions then do not add your own.
 
         Return the tags as a list in JSON as follows:
         {{
