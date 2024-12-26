@@ -41,6 +41,9 @@ else:
     if 'selected_recipe_uuid' not in st.session_state:
         st.session_state['selected_recipe_uuid'] = 'No recipe selected'
         st.session_state['selected_recipe'] = {}
+    else:
+        print(st.session_state['selected_recipe_uuid'])
+    
 
     # initialize float UI
     float_init(theme=True, include_unstable_primary=False)
