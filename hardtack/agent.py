@@ -4,6 +4,7 @@ import json
 import requests
 import streamlit as st
 import os
+import time
 from openai import OpenAI
 from hardtack.processing import process_recipe
 import hardtack.utils as utils
@@ -32,6 +33,7 @@ def find_single_recipe(*, user_desire: str, model: str = 'openai', query_temp: f
     results = search.retrieve_results(scores)
     summary = search.summarize_single_search(user_desire, results, stream=stream, temp=summary_temp)
     st.session_state['most_recent_query'] = results
+
     return summary
 
 def show_recipe(*, recipe_uuid: str): 
@@ -45,6 +47,16 @@ def show_recipe(*, recipe_uuid: str):
         str: A message indicating that the recipe will be shown.
     """
     st.session_state['selected_recipe_uuid'] = recipe_uuid
+                
+    # Construct the blob name for the recipe JSON file
+    blob_name = f'recipe/{recipe_uuid}.json'
+    
+    # Retrieve the JSON file from GCS
+    recipe_data = storage.retrieve_file_from_gcs(blob_name)
+    recipe_string = recipe_data.read().decode('utf-8')
+    st.session_state['selected_recipe'] = json.loads(recipe_string)
+    st.session_state['last_updated_recipe'] = time.time()
+
     return 'Sure! Take a look at this.'
 
 def edit_recipe(*, uuid: str, changes_to_make: str, model: str = 'openai', query_temp: float = 0.3, server_url: str = "http://192.168.0.19:11434"):
@@ -66,6 +78,10 @@ def edit_recipe(*, uuid: str, changes_to_make: str, model: str = 'openai', query
     weaviate_response = storage.update_weaviate_record(update_params=update_params, uuid=uuid)
     json_response = storage.update_gcs_json_record(update_params=update_params, uuid=uuid)
     print(json_response)
+
+    # pull and show new recipe
+    new_recipe_text = show_recipe(recipe_uuid=uuid)
+
     return 'The recipe has been updated!'
 
 def run_recommendation_engine(*, user_desire: str, model: str = 'openai', query_temp: float = 0.9, summary_temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
@@ -132,8 +148,11 @@ def run_processing_pipeline(
     storage.add_weaviate_record(recipe_json=recipe)
     storage.save_to_gcs(f"{recipe['uuid']}.json", content=recipe, content_type='application/json')
 
+    # display it
+    show_recipe = show_recipe(recipe_uuid=recipe['uuid'])
+
     print(f"Successfully processed and saved: {recipe['uuid']}")
-    return f"Successfully processed and saved recipe with UUID: {recipe['uuid']}"
+    return f"I successfully processed and saved the recipe {recipe['dish_name']}. Take a look!"
 
 def get_bot_response(message, model: str = 'openai', temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
 
