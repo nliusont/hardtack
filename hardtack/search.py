@@ -92,11 +92,8 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
             )
             
             content = response.choices[0].message.content
-            print('check 1')
             content = content.replace('```json', '').replace('```', '')
-            print(content)
             result = json.loads(content)
-            print('check 3')
             return result
         else:
             response = requests.post(
@@ -234,7 +231,7 @@ def score_query_results(recipe_distances, searched_dimensions):
     return combined_scores
 
 
-def retrieve_results(combined_scores, top_n=3, json_dir='data/json'):
+def retrieve_results(combined_scores, top_n=5, json_dir='data/json'):
     """
     Retrieve the top search results based on the combined scores.
 
@@ -302,7 +299,7 @@ def summarize_results(
         The recipes are ordered such that the closest match is first.
 
         Please review the results along with the user input and the chat history. Do the following:
-        1. Decide which recipes to present to the user.  You do not have to return every recipe if you do not believe they match the user's interest.
+        1. Decide which recipes to present to the user.  You do not have to return every recipe if you do not believe they match the user's interest. 
         2. For the recipes you choose to present, briefly summarize them to the user to help the user decide on which to cook. 
 
         Do not say anything like "I've reviewed the search results" or "Here are the results of your query" or "Based on your query". 
@@ -311,6 +308,7 @@ def summarize_results(
         
         Keep your summary concise, succinct and professional.
         Use markdown like newline breaks to format your response.
+        At most, present the user with three recipes at a time.
 
         User input:
         {user_input}
