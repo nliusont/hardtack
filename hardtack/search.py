@@ -398,12 +398,12 @@ def summarize_single_search(
 
         Please review the results along with the user input and the chat history. Do the following:
         1. Decide which recipe is most likely to the recipe the user is looking for.
-        2. Present a summary of the single recipe and explain why it might match what they're seeking.
+        2. Present a brief summary of the single recipe and explain why it might match what they're seeking.
 
         Do not say anything like "I've reviewed the search results" or "Here are the results of your query" or "Based on your query". 
         Present the recipe if you are a librarian returning with a book. Do not present the entire recipe to the user. You may ask them if they want you to show it or display it to them.
         
-        Keep your summary concise, succinct and professional.
+        Keep your summary concise, succinct and professional. A few sentences or bullets is fine.
         Use markdown like newline breaks to format your response.
 
         User input:
