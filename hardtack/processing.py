@@ -40,8 +40,8 @@ def extract_recipe(
     - cooking_steps - stored as list
     - active_time - amount of time actively cooking in minutes
     - total_time - total cook time from start to finish in minutes
-    - source_name - NYTimes, Hellofresh, Blue Apron, Serious Eats, etc.
-    - author - The name of the person who developed the recipe, if available.
+    - source_name - the platform/publication/book/website where the recipe came from. NYTimes, Hellofresh, Blue Apron, Serious Eats, Instagram, Kitchn, etc.
+    - author - The name or handle of the person who developed the recipe, if available.
     - servings - The number of servings the recipe creates. If the recipe provides a range, choose the midpoint integer of the range (rounding down if needed).
 
     Return the result as a JSON object, structured as below:
