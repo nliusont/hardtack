@@ -47,6 +47,9 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
         - less_or_equal
         - is_null
 
+    If the user asks for dihes that have NOT been cooked yet, pass: [None, "is_null"]. 
+    To simply search for recipes that have ALREADY been cooked, pass: [0.0, "greater_or_equal"]
+
     Your job is to decide which of the above dimensions you would like to search (one or many) and then to decide what your search query terms for that dimension should be.
     The system will take your decision and do a similarity search with embeddings of your search queries. Use your knowledge of cooking and food to generate relevant tags, dish names or ingredients to find a matching recipe.
     In order to generate tags, it might help for you to generate a list of adjectives that are similar to the descriptions provided by the user.
@@ -55,7 +58,8 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
     {{
         "dish_name":[],
         "tags":["dessert", "sweet"],
-        "shopping_list":["walnuts", "brown sugar"]
+        "shopping_list":["walnuts", "brown sugar"],
+        "rating":[]
     }}
 
     Or if the user is looking for Coq Au Vin or similar dishes which have a rating of at least 3, you would return a JSON as below
@@ -63,12 +67,10 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
         "dish_name":["Coq Au Vin"],
         "tags":["stew", "braised", "savory", "hearty", "rustic"],
         "shopping_list":["red wine"],
-        "rating":[3.0, "GreaterThanEqual"]
+        "rating":[3.0, "greater_or_equal"]
     }}
     
     You do not need to explicitly defined a search dimension. The system knows you wish to search a given dimension if the list of query terms has more than one item. 
-    To search for dishes that have not been cooked, provide a one item list of [isNull].
-    
     Restrictions:
     Do not add ingredients to the shopping list that the user has not specified.
     Do not search for a specific dish name unless the user has specified it.
@@ -129,6 +131,9 @@ def query_vectors(query_params, collection_name='Recipe', num_matches=5, db='rem
         dict: A dictionary containing the distances for the search results.
         list: A list of dimensions that were searched.
     """
+
+    print(f"Querying Weaviate for: {query_params}")
+
     headers = {
         "X-OpenAI-Api-Key": os.getenv('OPENAI_API_KEY')
     }
@@ -150,7 +155,7 @@ def query_vectors(query_params, collection_name='Recipe', num_matches=5, db='rem
     collection = client.collections.get(collection_name)
 
     # get total # of searched dimensions for scoring
-    searched_dimensions = [dim for dim, terms in query_params.items() if len(terms) > 0 and dim is not 'rating']
+    searched_dimensions = [dim for dim, terms in query_params.items() if len(terms) > 0 and dim != 'rating']
 
     operand_mapping = {
         "greater_than": lambda v: Filter.by_property("rating").greater_than(v),
