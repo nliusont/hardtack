@@ -45,9 +45,9 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
         - greater_or_equal
         - less_than
         - less_or_equal
-        - is_null
+        - is_none
 
-    If the user asks for dihes that have NOT been cooked yet, pass: [None, "is_null"]. 
+    If the user asks for dihes that have NOT been cooked yet, pass: ["none", "is_none"]. 
     To simply search for recipes that have ALREADY been cooked, pass: [0.0, "greater_or_equal"]
 
     Your job is to decide which of the above dimensions you would like to search (one or many) and then to decide what your search query terms for that dimension should be.
@@ -92,8 +92,11 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
             )
             
             content = response.choices[0].message.content
+            print('check 1')
             content = content.replace('```json', '').replace('```', '')
+            print(content)
             result = json.loads(content)
+            print('check 3')
             return result
         else:
             response = requests.post(
@@ -164,7 +167,7 @@ def query_vectors(query_params, collection_name='Recipe', num_matches=5, db='rem
         "less_or_equal": lambda v: Filter.by_property("rating").less_or_equal(v),
         "equal": lambda v: Filter.by_property("rating").equal(v),
         "no_equal": lambda v: Filter.by_property("rating").not_equal(v),
-        "is_null": lambda _: Filter.by_property("rating").is_null(),
+        "is_none": lambda _: Filter.by_property("rating").is_none(True),
     }
 
     # determine if a rating filter is needed
