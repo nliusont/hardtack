@@ -332,7 +332,7 @@ def process_recipe(
     else:
         processed_recipe = recipe
 
-    processed_recipe['date_added'] = datetime.now().strftime('%Y-%m-%d')
+    processed_recipe['date_added'] = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     if url:
         processed_recipe['url'] = url
