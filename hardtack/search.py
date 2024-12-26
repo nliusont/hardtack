@@ -39,13 +39,13 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
 
     Explicit filtering is available for the following dimensions:
     - rating - the past rating of the dish by the user (float). Dishes that have not been cooked have a rating of Null while dishes that have been cooked have a numerical 0-5 rating. To search by rating, provide a list of the numerical value and the operator. Available operators are:
-        - Equal
-        - NotEqual
-        - GreaterThan
-        - GreaterThanEqual
-        - LessThan
-        - LessThanEqual
-        - IsNull
+        - equal
+        - not_equal
+        - greater_than
+        - greater_or_equal
+        - less_than
+        - less_or_equal
+        - is_null
 
     Your job is to decide which of the above dimensions you would like to search (one or many) and then to decide what your search query terms for that dimension should be.
     The system will take your decision and do a similarity search with embeddings of your search queries. Use your knowledge of cooking and food to generate relevant tags, dish names or ingredients to find a matching recipe.
