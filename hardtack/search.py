@@ -8,6 +8,7 @@ import os
 from openai import OpenAI
 from weaviate.classes.query import MetadataQuery
 from weaviate.classes.init import Auth, AdditionalConfig, Timeout
+from weaviate.classes.query import Filter
 from hardtack.storage import retrieve_file_from_gcs
 
 
@@ -28,11 +29,23 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
     You are an expert chef and recipe writer. You are interacting with a user that is looking for recipes in a database so they can make a dish.
     Please use a concise and professional tone with the user.
 
-    You are able to search this database according to the following dimensions:
+    You are able to search this database both with vector / semantic search and with explicit filtering.
+    
+    Vector searching is available for the following dimensions:
     - dish_name - The name of the dish.
     - tags - Tags that describe the dish. These cover meal types (e.g. dinner), dish types (e.g. soup, salad, sandwich), flavor profiles (e.g. spicy, sweet), cuisines (e.g. Indian, Mexican), and cooking styles or equipment (e.g. Pressure cooker, easy)
     - shopping_list - This is of the ingredients that go in the dish.
     - source_author - The name of the publication/author where the recipe was sourced. This can be things like a website, book, publication, app, or person.
+
+    Explicit filtering is available for the following dimensions:
+    - rating - the past rating of the dish by the user (float). Dishes that have not been cooked have a rating of Null while dishes that have been cooked have a numerical 0-5 rating. To search by rating, provide a tuple of the numerical value and the operator. Available operators are:
+        - Equal
+        - NotEqual
+        - GreaterThan
+        - GreaterThanEqual
+        - LessThan
+        - LessThanEqual
+        - IsNull
 
     Your job is to decide which of the above dimensions you would like to search (one or many) and then to decide what your search query terms for that dimension should be.
     The system will take your decision and do a similarity search with embeddings of your search queries. Use your knowledge of cooking and food to generate relevant tags, dish names or ingredients to find a matching recipe.
@@ -45,14 +58,16 @@ def define_query_params(user_input: str, model: str = 'openai', query_temp: floa
         "shopping_list":["walnuts", "brown sugar"]
     }}
 
-    Or if the user is looking for Coq Au Vin or similar dishes, you would return a JSON as below
+    Or if the user is looking for Coq Au Vin or similar dishes which have a rating of at least 3, you would return a JSON as below
     {{
         "dish_name":["Coq Au Vin"],
         "tags":["stew", "braised", "savory", "hearty", "rustic"],
-        "shopping_list":["red wine"]
+        "shopping_list":["red wine"],
+        "rating":(3.0, "GreaterThanEqual")
     }}
     
     You do not need to explicitly defined a search dimension. The system knows you wish to search a given dimension if the list of query terms has more than one item. 
+    To search for dishes that have not been cooked, provide a tuple of (None, isNull).
     
     Restrictions:
     Do not add ingredients to the shopping list that the user has not specified.
