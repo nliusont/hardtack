@@ -6,8 +6,8 @@ from hardtack.utils import format_recipe
 from hardtack.storage import retrieve_file_from_gcs
 import os
 import time
-from dotenv import load_dotenv
-load_dotenv()
+#from dotenv import load_dotenv
+#load_dotenv()
 
 # set the page title and layout
 st.set_page_config(page_title="hardtack", layout="wide")
