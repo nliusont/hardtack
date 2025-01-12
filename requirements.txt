@@ -8,3 +8,5 @@ streamlit_float
 google-cloud-storage
 openai
 lxml
+fastapi
+uvicorn
