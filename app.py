@@ -6,12 +6,13 @@ from hardtack.utils import format_recipe
 from hardtack.storage import retrieve_file_from_gcs
 import os
 import time
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 
 # set the page title and layout
 st.set_page_config(page_title="hardtack", layout="wide")
 
+#----------Authentication----------
 if 'authenticated' not in st.session_state or st.session_state['authenticated']==False:
     with st.form("login_form", clear_on_submit=True):
         st.title("🔒 Login Required")
@@ -27,7 +28,7 @@ if 'authenticated' not in st.session_state or st.session_state['authenticated']=
             else:
                 st.error("WRONG!")
 else:
-
+#----------Initialize Session State----------
     # initialize session state for chat history
     if 'chat_history' not in st.session_state:
         st.session_state['chat_history'] = []
@@ -39,17 +40,16 @@ else:
         st.session_state['selected_recipe_uuid'] = 'No recipe selected'
         st.session_state['selected_recipe'] = {}
     
-
     # initialize float UI
     float_init(theme=True, include_unstable_primary=False)
 
     # header
     st.title("hardtack")
-
     col1, col2 = st.columns(2)
     
     with col1:
         st.divider()
+        #----------File Uploads----------
         with st.expander('Upload files'):
             # File uploader widget
             uploaded_files = st.file_uploader("Choose a file", accept_multiple_files=True)
@@ -64,6 +64,8 @@ else:
 
                 st.session_state['uploaded_file_type'] = file_type
                 st.session_state['uploaded_files'] = uploaded_files
+        
+        #----------Chat Interface----------
         # display chat messages from history on app rerun
         for message in st.session_state['chat_history']:
             with st.chat_message(message[0]):
@@ -86,7 +88,7 @@ else:
                     st.markdown(user_input)
                 
                 with st.chat_message("assistant", avatar="🕵️"):
-                    if True:  # change to False if you want to disable streaming
+                    if True:
                         response = st.write_stream(get_bot_response(user_input, model='openai'))
                     else:
                         response = get_bot_response(user_input, stream=False)
@@ -95,13 +97,14 @@ else:
                 st.session_state['chat_history'].append(('assistant', response))
     with col2:
         st.divider()
+        #----------Display Recipe----------
         if 'selected_recipe_uuid' in st.session_state:
             if st.session_state['selected_recipe_uuid']!='No recipe selected':
                 recipe_uuid = st.session_state['selected_recipe_uuid'] 
 
                 recipe_data = st.session_state['selected_recipe'] 
                 
-                # Call the function to display the recipe
+                # call the function to display the recipe
                 format_recipe(recipe_data)
                 
             else:
