@@ -1,5 +1,4 @@
 import streamlit as st
-from google.cloud import storage
 from streamlit_float import *
 from hardtack.utils import format_recipe, simulate_stream
 import os
@@ -8,7 +7,7 @@ import requests
 #from dotenv import load_dotenv
 #load_dotenv()
 
-BACKEND_API_URL='http://127.0.0.1:8000/bot-response/'
+BACKEND_API_URL='http://127.0.0.1:8000/bot-response/' # for testing
 
 # set the page title and layout
 st.set_page_config(page_title="hardtack", layout="wide")
