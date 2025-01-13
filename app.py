@@ -119,8 +119,8 @@ else:
                         if response.status_code == 200:
                             # stream in chunks
                             for chunk in response.iter_lines():
-                                if chunk:  # Skip empty chunks
-                                    st.write_stream(chunk.decode("utf-8"))
+                                if chunk:  # skip empty chunks
+                                    st.write_stream((chunk.decode("utf-8") for chunk in response.iter_lines() if chunk))
                         else:
                             # error handling
                             st.error(f"Error: {response.status_code} - {response.text}")
