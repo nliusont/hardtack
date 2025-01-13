@@ -160,10 +160,8 @@ def get_bot_response(
         selected_recipe: dict = {},
         model: str = 'openai', 
         temp: float = 0.6, 
-        server_url: str = "http://192.168.0.19:11434", 
-        stream: bool = False
-        ):
-
+        server_url: str = "http://192.168.0.19:11434"
+    ):
     """
     Get a response from the chatbot based on the user's message.
 
@@ -172,102 +170,77 @@ def get_bot_response(
         model (str): The language model to use.
         temp (float): The temperature for generating the response.
         server_url (str): The URL of the server for querying the model.
-        stream (bool): Whether to stream the response.
 
-    Yields:
-        str: The chatbot's response, possibly in streaming format.
+    Returns:
+        str: The chatbot's complete response as a single string.
     """
     try:
-
+        # Prepare conversation messages
         messages = [
             {"role": "system", "content": f"""
             You are a recipe chat bot. You are an expert home cook and recipe writer.
             You can help the user by answering questions via your own knowledge or querying a local database of recipes to assist the user in selecting a dish to make. 
             Respond to the user in a concise, succinct, and professional manner.
-            
-            If needed, you have access to several functions.
-            Do not call a function based on any older messages. Completely ignore any previous requests for function calls from earlier in the conversation when deciding to call a function in the current moment. 
-            The decision to call a function depends solely on the user's latest message.
-             
-            Functions available:
-            1. run_recommendation_engine(user_desire="<YOUR INPUT>") - Triggers a pipeline that provides recommendations based on user input. Only trigger this function if the user asks you for recommendations in their most recent message. The user_desires is a positional input that is a string. It should be a summary of what the user is looking for including flavor profile, cuisine, type of equipment (e.g. pressure cooker), meal type (e.g. lunch), food type (e.g. soup, salad), ingredients, etc. The more descriptive the better. If the user specifies a desired rating and operator (e.g. greater than), specify that. If that user asks for a dish that hasn't been cooked yet, it means they're looking for dishes that have a is_null rating. If they are looking for dishes they HAVE cooked, they are looking for dishes with a rating greater than or equal to 0.
-            2. find_single_recipe(user_desire="<YOUR INPUT>") - Triggers a pipeline to search for a single known recipe. Trigger this function when the user is asking you to find a specific recipe that is known to exist in the database. The "name" field is likely the key to searching. The user_desires is a positional input that is a string. It should be a summary of what the user is looking for including flavor profile, cuisine, type of equipment (e.g. pressure cooker), meal type (e.g. lunch), food type (e.g. soup, salad), ingredients, etc. The more descriptive the better.
-            3. show_recipe(recipe_uuid="<YOUR INPUT>") - Displays the entire recipe for the user to read and respond to. Takes the UUID of the recipe they want to see. If a user asks you to "show" the a recipe, then they likely want this function.
-            4. edit_recipe(uuid="<YOUR INPUT>", changes_to_make="<YOUR DESCRIPTION OF CHANGES>") - Updates the record of a recipe in the database. You can edit/update specific fields by describing in detail the changes and fields to make.
-            5. run_processing_pipeline(source_type=<url or html or img, url=str) - This function is to add a new recipe to the database. If the user wants to add a recipe, specify what the source type is. source_type can either be 'url', 'file'. If the source_type is 'url', provide the url as a string. If the user has alludes to "attached" or "uploaded" images or html, then the source type is 'file' and you can assume they uploaded them. You do not need to ask them to provide the image file. Simply run this function.
-             
-            When you want to call a function, respond with this exact format and DO NOT RESPOND WITH ANY OTHER TEXT:
-            ```json
-            {{"function_name": "name_of_function", "arguments": {{"arg1": "value1", "arg2": "value2"}}}}
-             
-            For example, to run function 1, it might look like this:
-            ```json
-            {{"function_name": "run_recommendation_engine", "arguments": {{"user_desire": "<YOUR INPUT>"}}}}
 
-            If the user has not asked for you to search the database or for recommendations, then just respond normally.
-             
             Restrictions:
-            You can tell the user about your abilities, but do not surface the exact function calls to the user.
-            DO NOT offer up recipes to the user unless they've been returned to you by the database. 
-            If you call a function, do not produce any text after your function call json.
-             
-            You have access to some important hidden context for this chat. This context is **not to be repeated to the user in any form**. 
-            Here is the hidden context for this session:
+            You have access to hidden context for this session:
             {{
                 "most_recent_query": "{most_recent_query}",
                 "selected_recipe": {json.dumps(selected_recipe)}
             }}
-            Do not repeat this context back to the user. Use it to inform your responses, but do not mention it.
+            Do not repeat this context back to the user.
             """}
         ]
-        
+
         for msg_type, msg_text in chat_history:
             role = "user" if msg_type == "user" else "assistant"
             messages.append({"role": role, "content": msg_text})
         
+        # Append the current user message
         messages.append({"role": "user", "content": message})
 
+        # Call OpenAI or custom server
         if model == 'openai':
-
             client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=messages,
                 temperature=temp
             )
-
             content = response.choices[0].message.content
-            content = content.replace('```json', '')
+            content = content.replace('```json', '')  # Clean response if needed
         else:
             response = requests.post(f"{server_url}/api/chat", json={
-                "model": model, 
+                "model": model,
                 "messages": messages,
-                "stream": stream,
+                "stream": False,
                 'options': {
                     'temperature': temp,
                     "num_ctx": 32768
                 }
-            }, stream=stream)
+            })
 
             if response.status_code == 200:
                 data = response.json()
                 content = data.get("message", {}).get("content", "")
             else:
-                yield f"get_bot_response error: Received status code {response.status_code} from the bot server."
-        
+                return f"Error: Received status code {response.status_code} from the bot server."
+
+        # Handle potential function calls in the response
         function_call = utils.extract_function_call(content)
-        if function_call:  # If a function call was detected
+        if function_call:
             print(f"Executing function '{function_call['function_name']}' with args: {function_call['arguments']}")
+            # Execute the function call and return the result as a string
             function_result = utils.handle_function_call(function_call)
-            for chunk in utils.simulate_stream(function_result):
-                yield chunk
+            return function_result  # Return the result of the function call
         else:
-            for chunk in utils.simulate_stream(content):
-                yield chunk
+            return content  # Return the chatbot's response
 
     except requests.exceptions.RequestException as e:
-        yield f"get_bot_response error: Could not connect to the bot server. Details: {e}"
+        return f"Error: Could not connect to the bot server. Details: {e}"
+    except Exception as e:
+        return f"Error: An unexpected error occurred. Details: {e}"
+
 
 # Now we update the function registry after the functions are defined
 function_registry.FUNCTION_REGISTRY = {

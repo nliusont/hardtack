@@ -1,9 +1,7 @@
 import streamlit as st
 from google.cloud import storage
 from streamlit_float import *
-from hardtack import get_bot_response
-from hardtack.utils import format_recipe
-from hardtack.storage import retrieve_file_from_gcs
+from hardtack.utils import format_recipe, simulate_stream
 import os
 import time
 import requests
@@ -117,10 +115,10 @@ else:
 
                         # check that request was successful
                         if response.status_code == 200:
+                            json_response = response.json()
+                            chatbot_response = json_response.get("response", "") 
                             # stream in chunks
-                            for chunk in response.iter_lines():
-                                if chunk:  # skip empty chunks
-                                    st.write_stream((chunk.decode("utf-8") for chunk in response.iter_lines() if chunk))
+                            st.write_stream(simulate_stream(chatbot_response))
                         else:
                             # error handling
                             st.error(f"Error: {response.status_code} - {response.text}")
