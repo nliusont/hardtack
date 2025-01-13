@@ -5,8 +5,8 @@ from hardtack.utils import format_recipe, simulate_stream
 import os
 import time
 import requests
-from dotenv import load_dotenv
-load_dotenv()
+#from dotenv import load_dotenv
+#load_dotenv()
 
 API_URL='http://127.0.0.1:8000/bot-response/'
 
@@ -127,7 +127,7 @@ else:
                         st.error(f"Failed to connect to the API: {e}")
                 
                 # add assistant response to chat history
-                st.session_state['chat_history'].append(('assistant', response))
+                st.session_state['chat_history'].append(('assistant', chatbot_response))
     with col2:
         st.divider()
         #----------Display Recipe----------
