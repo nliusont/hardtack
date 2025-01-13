@@ -91,8 +91,14 @@ else:
                     st.markdown(user_input)
                 
                 with st.chat_message("assistant", avatar="🕵️"):
-
+                    
+                    # call session state vars to pass to endpoint
                     chat_history = st.session_state.get('chat_history', [])
+                    # sanitize chat_history so it's JSON-serializable
+                    chat_history = [
+                        {"role": msg_type, "content": str(msg_text) if isinstance(msg_text, str) else "<Non-Serializable Content>"}
+                        for msg_type, msg_text in st.session_state.get("chat_history", [])
+]
                     most_recent_query = st.session_state.get('most_recent_query', '')
                     selected_recipe = st.session_state.get('selected_recipe', {})
 
