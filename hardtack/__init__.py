@@ -2,10 +2,11 @@
 
 from .agent import get_bot_response
 import os
-#from dotenv import load_dotenv
 
 # Load environment variables from the .env file
-#load_dotenv()
+if os.environ.get("DEVELOPMENT"):
+    from dotenv import load_dotenv
+    load_dotenv()
 
 # load the json key from the environment variable
 gcloud_key = os.environ.get("GCLOUD_SERVICE_KEY")
