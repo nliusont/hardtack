@@ -8,7 +8,7 @@ import requests
 #from dotenv import load_dotenv
 #load_dotenv()
 
-API_URL='http://127.0.0.1:8000/bot-response/'
+BACKEND_API_URL='http://127.0.0.1:8000/bot-response/'
 
 # set the page title and layout
 st.set_page_config(page_title="hardtack", layout="wide")
@@ -103,7 +103,7 @@ else:
                     try:
                         # send POST request to fastapi endpoint
                         response = requests.post(
-                            API_URL,
+                            BACKEND_API_URL,
                             json={
                                 "message": user_input,
                                 "chat_history": chat_history,
