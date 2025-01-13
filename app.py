@@ -10,6 +10,8 @@ import requests
 from dotenv import load_dotenv
 load_dotenv()
 
+API_URL='http://127.0.0.1:8000/bot-response/'
+
 # set the page title and layout
 st.set_page_config(page_title="hardtack", layout="wide")
 
@@ -95,23 +97,21 @@ else:
                             API_URL,
                             json={
                                 "message": user_input,
-                                "model": "openai",  # Optional: Adjust based on your API
-                                "temp": 0.6  # Optional: Adjust based on your requirements
+                                "model": "openai",
                             },
-                            stream=True  # Enable streaming
                         )
 
-                        # Check if the request was successful
+                        # check that request was successful
                         if response.status_code == 200:
-                            # Stream the response chunks from the FastAPI server
+                            # stream in chunks
                             for chunk in response.iter_lines():
                                 if chunk:  # Skip empty chunks
                                     st.write_stream(chunk.decode("utf-8"))
                         else:
-                            # Handle errors (e.g., 400 or 500 response codes)
+                            # error handling
                             st.error(f"Error: {response.status_code} - {response.text}")
                     except requests.exceptions.RequestException as e:
-                        # Handle connection errors
+                        # error handling
                         st.error(f"Failed to connect to the API: {e}")
                 
                 # add assistant response to chat history
