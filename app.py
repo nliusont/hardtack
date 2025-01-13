@@ -1,11 +1,12 @@
+import os
+import time
 import streamlit as st
 from streamlit_float import *
 from hardtack import get_bot_response
 from hardtack.utils import format_recipe
-import os
-import time
-#from dotenv import load_dotenv
-#load_dotenv()
+
+from dotenv import load_dotenv
+load_dotenv()
 
 # set the page title and layout
 st.set_page_config(page_title="hardtack", layout="wide")
