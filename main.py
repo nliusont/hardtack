@@ -17,6 +17,8 @@ async def bot_response(payload: Dict[str, Any]):
     """
     try:
         message = payload.get("message")
+        most_recent_query = payload.get("most_recent_query")
+        selected_recipe = payload.get('selected_recipe')
         model = payload.get("model", "openai")
         temp = payload.get("temp", 0.6)
 
@@ -25,7 +27,13 @@ async def bot_response(payload: Dict[str, Any]):
 
         # wrap the `get_bot_response` generator as a streaming response
         def response_generator():
-            for chunk in get_bot_response(message, model=model, temp=temp):
+            for chunk in get_bot_response(
+                message, 
+                most_recent_query=most_recent_query,
+                selected_recipe=selected_recipe,
+                model=model, 
+                temp=temp
+                ):
                 yield chunk
 
         return StreamingResponse(response_generator(), media_type="text/plain")

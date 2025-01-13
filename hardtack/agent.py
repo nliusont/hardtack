@@ -55,7 +55,6 @@ def show_recipe(*, recipe_uuid: str):
     recipe_data = storage.retrieve_file_from_gcs(blob_name)
     recipe_string = recipe_data.read().decode('utf-8')
     st.session_state['selected_recipe'] = json.loads(recipe_string)
-    st.session_state['last_updated_recipe'] = time.time()
 
     return 'Sure! Take a look at this.'
 
@@ -154,7 +153,13 @@ def run_processing_pipeline(
     print(f"Successfully processed and saved: {recipe['uuid']}")
     return f"I successfully processed and saved the recipe {recipe['dish_name']}. Take a look!"
 
-def get_bot_response(message, model: str = 'openai', temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
+def get_bot_response(
+        message, 
+        model: str = 'openai', 
+        temp: float = 0.6, 
+        server_url: str = "http://192.168.0.19:11434", 
+        stream: bool = False
+        ):
 
     """
     Get a response from the chatbot based on the user's message.
@@ -170,8 +175,6 @@ def get_bot_response(message, model: str = 'openai', temp: float = 0.6, server_u
         str: The chatbot's response, possibly in streaming format.
     """
     try:
-        most_recent_query = st.session_state.get('most_recent_query', 'No queries run yet')
-        selected_recipe = st.session_state.get('selected_recipe', {})
 
         messages = [
             {"role": "system", "content": f"""

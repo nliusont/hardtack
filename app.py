@@ -91,12 +91,20 @@ else:
                     st.markdown(user_input)
                 
                 with st.chat_message("assistant", avatar="🕵️"):
+
+                    chat_history = st.session_state.get('chat_history', [])
+                    most_recent_query = st.session_state.get('most_recent_query', '')
+                    selected_recipe = st.session_state.get('selected_recipe', {})
+
                     try:
                         # send POST request to fastapi endpoint
                         response = requests.post(
                             API_URL,
                             json={
                                 "message": user_input,
+                                "chat_history": chat_history,
+                                "most_recent_query": most_recent_query,
+                                "selected_recipe": selected_recipe,
                                 "model": "openai",
                             },
                         )
