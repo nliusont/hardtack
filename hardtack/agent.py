@@ -12,6 +12,7 @@ import hardtack.search as search
 import hardtack.storage as storage
 import hardtack.function_registry as function_registry
 
+
 def find_single_recipe(*, user_desire: str, model: str = 'openai', query_temp: float = 0.9, summary_temp: float = 0.6, server_url: str = "http://192.168.0.19:11434", stream: bool = False):
     """
     Find a single recipe from the database based on the user's input.

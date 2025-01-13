@@ -5,8 +5,9 @@ from streamlit_float import *
 from hardtack import get_bot_response
 from hardtack.utils import format_recipe
 
-from dotenv import load_dotenv
-load_dotenv()
+if os.environ.get("DEVELOPMENT"):
+    from dotenv import load_dotenv
+    load_dotenv()
 
 # set the page title and layout
 st.set_page_config(page_title="hardtack", layout="wide")
