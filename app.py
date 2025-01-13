@@ -1,9 +1,7 @@
 import streamlit as st
-from google.cloud import storage
 from streamlit_float import *
 from hardtack import get_bot_response
 from hardtack.utils import format_recipe
-from hardtack.storage import retrieve_file_from_gcs
 import os
 import time
 #from dotenv import load_dotenv
