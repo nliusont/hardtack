@@ -1,6 +1,9 @@
 # README
 [Diagram](https://www.figma.com/board/qLnKmifbnDhnCi2BIiFCe2/Untitled?node-id=0-1&t=5YTh13Z1P72pzMMf-1)
 
+## Usage
+Streamlit client:
+`streamlit run app.py`
 
 ## TODO
 * Add logging and human feedback
