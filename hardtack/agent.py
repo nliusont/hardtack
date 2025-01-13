@@ -155,6 +155,9 @@ def run_processing_pipeline(
 
 def get_bot_response(
         message, 
+        chat_history: list,
+        most_recent_query: str = '',
+        selected_recipe: dict = {},
         model: str = 'openai', 
         temp: float = 0.6, 
         server_url: str = "http://192.168.0.19:11434", 
@@ -218,7 +221,7 @@ def get_bot_response(
             """}
         ]
         
-        for msg_type, msg_text in st.session_state['chat_history']:
+        for msg_type, msg_text in chat_history:
             role = "user" if msg_type == "user" else "assistant"
             messages.append({"role": role, "content": msg_text})
         

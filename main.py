@@ -17,6 +17,7 @@ async def bot_response(payload: Dict[str, Any]):
     """
     try:
         message = payload.get("message")
+        chat_history = payload.get("chat_history")
         most_recent_query = payload.get("most_recent_query")
         selected_recipe = payload.get('selected_recipe')
         model = payload.get("model", "openai")
@@ -29,6 +30,7 @@ async def bot_response(payload: Dict[str, Any]):
         def response_generator():
             for chunk in get_bot_response(
                 message, 
+                chat_history=chat_history,
                 most_recent_query=most_recent_query,
                 selected_recipe=selected_recipe,
                 model=model, 
